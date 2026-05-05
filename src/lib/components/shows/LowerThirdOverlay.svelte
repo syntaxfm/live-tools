@@ -1,14 +1,7 @@
 <script lang="ts">
-	import {
-		createLowerThirdOverlaySubscription,
-		createShowHostSubscription
-	} from '$lib/components/shows/show-queries.svelte';
-	import {
-		getCurrentLowerThirdOverlay,
-		getLowerThirdAsset,
-		getLowerThirdTitle,
-		isLowerThirdBroadcastActive
-	} from '$lib/utils/lower-thirds';
+	import { app } from '$lib/schema';
+	import { getLowerThirdAsset, getLowerThirdTitle } from '$lib/utils/lower-thirds';
+	import { QuerySubscription } from 'jazz-tools/svelte';
 
 	interface Props {
 		showId: string | undefined;
@@ -16,24 +9,31 @@
 
 	let { showId }: Props = $props();
 
-	const lowerThirdOverlays = createLowerThirdOverlaySubscription(() => showId);
-	const lowerThirdOverlay = $derived(getCurrentLowerThirdOverlay(lowerThirdOverlays.current ?? []));
-	const activeShowHostId = $derived(lowerThirdOverlay?.activeShowHostId ?? undefined);
-	const hosts = createShowHostSubscription(() => activeShowHostId);
+	const shows = new QuerySubscription(() => (showId ? app.shows.where({ id: showId }) : undefined));
+	const show = $derived(shows.current?.[0] ?? null);
+
+	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? undefined);
+
+	const hosts = new QuerySubscription(() =>
+		activeShowHostId ? app.showHosts.where({ id: activeShowHostId }) : undefined
+	);
+
 	const host = $derived(hosts.current?.[0] ?? null);
 	const asset = $derived(host ? getLowerThirdAsset(host) : null);
 	const title = $derived(host ? getLowerThirdTitle(host) : '');
-	const updatedAt = $derived(
-		lowerThirdOverlay ? new Date(lowerThirdOverlay.updatedAt).getTime() : 0
-	);
-	const shouldShowLowerThird = $derived(
-		lowerThirdOverlay ? isLowerThirdBroadcastActive(new Date(lowerThirdOverlay.updatedAt)) : false
-	);
+
+	$effect(() => {
+		console.log('[lower-third:overlay] active host', {
+			activeShowHostId,
+			hostId: host?.id ?? null,
+			showId
+		});
+	});
 </script>
 
-{#if host && asset && lowerThirdOverlay?.activeShowHostId && shouldShowLowerThird}
+{#if host && asset && activeShowHostId}
 	<div class="lower-third-stage">
-		{#key `${host.id}-${updatedAt}`}
+		{#key host.id}
 			<section class="lt-root" data-tone={asset.tone} aria-live="polite">
 				<div class="lt-avatar">
 					<img src={asset.src} alt="" />

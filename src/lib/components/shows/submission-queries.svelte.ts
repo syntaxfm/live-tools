@@ -1,20 +1,7 @@
 import { QuerySubscription } from 'jazz-tools/svelte';
 
 import { app } from '$lib/schema';
-import type { AudienceSubmission, FeaturedSubmissionOverlay, SubmissionVote } from '$lib/schema';
-
-export function createShowSubmissionsSubscription(
-	showId: () => string | undefined
-): QuerySubscription<AudienceSubmission> {
-	return new QuerySubscription(
-		() => {
-			const id = showId();
-
-			return id ? app.audienceSubmissions.where({ showId: id }) : undefined;
-		},
-		{ tier: 'global' }
-	);
-}
+import type { AudienceSubmission, SubmissionVote } from '$lib/schema';
 
 export function createShowApprovedSubmissionsSubscription(
 	showId: () => string | undefined
@@ -22,7 +9,6 @@ export function createShowApprovedSubmissionsSubscription(
 	return new QuerySubscription(
 		() => {
 			const id = showId();
-
 			return id ? app.audienceSubmissions.where({ showId: id, status: 'approved' }) : undefined;
 		},
 		{ tier: 'global' }
@@ -71,19 +57,6 @@ export function createOwnShowSubmissionSubscription(
 			return id && currentAuthorId
 				? app.audienceSubmissions.where({ showId: id, authorId: currentAuthorId })
 				: undefined;
-		},
-		{ tier: 'global' }
-	);
-}
-
-export function createFeaturedSubmissionOverlaySubscription(
-	showId: () => string | undefined
-): QuerySubscription<FeaturedSubmissionOverlay> {
-	return new QuerySubscription(
-		() => {
-			const id = showId();
-
-			return id ? app.featuredSubmissionOverlays.where({ showId: id }) : undefined;
 		},
 		{ tier: 'global' }
 	);

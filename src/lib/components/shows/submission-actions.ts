@@ -5,8 +5,6 @@ import type {
 	AppUser,
 	AudienceSubmission,
 	AudienceSubmissionInsert,
-	FeaturedSubmissionOverlay,
-	FeaturedSubmissionOverlayInsert,
 	SubmissionVote,
 	SubmissionVoteInsert,
 	Show
@@ -42,9 +40,7 @@ interface ModerateAudienceSubmissionOptions {
 }
 
 interface FeatureAudienceSubmissionOptions {
-	appUserId: string;
 	db: Db;
-	existingOverlay: FeaturedSubmissionOverlay | null;
 	isAdmin: boolean;
 	showId: string;
 	submission: AudienceSubmission;
@@ -60,9 +56,7 @@ interface SetAudienceSubmissionVoteOptions {
 }
 
 interface ClearFeaturedSubmissionOptions {
-	appUserId: string;
 	db: Db;
-	existingOverlay: FeaturedSubmissionOverlay | null;
 	isAdmin: boolean;
 	showId: string;
 }
@@ -164,19 +158,27 @@ export async function moderateAudienceSubmission({
 }: ModerateAudienceSubmissionOptions): Promise<void> {
 	assertAdmin(isAdmin);
 
+	const updates: Partial<AudienceSubmissionInsert> =
+		status === 'approved'
+			? {
+					reviewedAt: new Date(),
+					reviewedById: appUserId,
+					status
+				}
+			: {
+					isFeatured: false,
+					reviewedAt: new Date(),
+					reviewedById: appUserId,
+					status
+				};
+
 	await db
-		.update(app.audienceSubmissions, submissionId, {
-			reviewedAt: new Date(),
-			reviewedById: appUserId,
-			status
-		})
+		.update(app.audienceSubmissions, submissionId, updates)
 		.wait({ tier: 'global' });
 }
 
 export async function featureAudienceSubmission({
-	appUserId,
 	db,
-	existingOverlay,
 	isAdmin,
 	showId,
 	submission
@@ -187,28 +189,11 @@ export async function featureAudienceSubmission({
 		throw new Error('Only approved submissions can be featured');
 	}
 
-	const updatedAt = new Date();
-
-	if (existingOverlay) {
-		await unfeaturePreviousSubmission(db, existingOverlay, submission.id);
-
-		await db
-			.update(app.featuredSubmissionOverlays, existingOverlay.id, {
-				activeSubmissionId: submission.id,
-				updatedAt,
-				updatedById: appUserId
-			})
-			.wait({ tier: 'global' });
-	} else {
-		const insert: FeaturedSubmissionOverlayInsert = {
-			activeSubmissionId: submission.id,
-			showId,
-			updatedAt,
-			updatedById: appUserId
-		};
-
-		await db.insert(app.featuredSubmissionOverlays, insert).wait({ tier: 'global' });
+	if (submission.showId !== showId) {
+		throw new Error('Submission does not belong to show');
 	}
+
+	await unfeatureShowSubmissions(db, showId, submission.id);
 
 	await db
 		.update(app.audienceSubmissions, submission.id, {
@@ -264,53 +249,36 @@ export async function setAudienceSubmissionVote({
 }
 
 export async function clearFeaturedSubmission({
-	appUserId,
 	db,
-	existingOverlay,
 	isAdmin,
 	showId
 }: ClearFeaturedSubmissionOptions): Promise<void> {
 	assertAdmin(isAdmin);
 
-	if (!existingOverlay) {
-		const insert: FeaturedSubmissionOverlayInsert = {
-			activeSubmissionId: null,
-			showId,
-			updatedAt: new Date(),
-			updatedById: appUserId
-		};
-
-		await db.insert(app.featuredSubmissionOverlays, insert).wait({ tier: 'global' });
-		return;
-	}
-
-	await unfeaturePreviousSubmission(db, existingOverlay);
-
-	await db
-		.update(app.featuredSubmissionOverlays, existingOverlay.id, {
-			activeSubmissionId: null,
-			updatedAt: new Date(),
-			updatedById: appUserId
-		})
-		.wait({ tier: 'global' });
+	await unfeatureShowSubmissions(db, showId);
 }
 
-async function unfeaturePreviousSubmission(
+async function unfeatureShowSubmissions(
 	db: Db,
-	existingOverlay: FeaturedSubmissionOverlay,
+	showId: string,
 	nextSubmissionId?: string
 ): Promise<void> {
-	const previousSubmissionId = existingOverlay.activeSubmissionId;
+	const submissions = await db.all(
+		app.audienceSubmissions.where({ showId }),
+		{ tier: 'global' }
+	);
 
-	if (!previousSubmissionId || previousSubmissionId === nextSubmissionId) {
-		return;
-	}
-
-	await db
-		.update(app.audienceSubmissions, previousSubmissionId, {
-			isFeatured: false
-		})
-		.wait({ tier: 'global' });
+	await Promise.all(
+		submissions
+			.filter((submission) => submission.isFeatured && submission.id !== nextSubmissionId)
+			.map((submission) =>
+				db
+					.update(app.audienceSubmissions, submission.id, {
+						isFeatured: false
+					})
+					.wait({ tier: 'global' })
+			)
+	);
 }
 
 function assertAdmin(isAdmin: boolean): void {

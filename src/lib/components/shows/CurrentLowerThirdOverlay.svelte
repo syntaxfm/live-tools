@@ -1,9 +1,10 @@
 <script lang="ts">
 	import LowerThirdOverlay from '$lib/components/shows/LowerThirdOverlay.svelte';
-	import { createShowsSubscription } from '$lib/components/shows/show-queries.svelte';
+	import { app } from '$lib/schema';
 	import { getCurrentShow } from '$lib/utils/shows';
+	import { QuerySubscription } from 'jazz-tools/svelte';
 
-	const shows = createShowsSubscription();
+	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
 	const currentShow = $derived(getCurrentShow(shows.current ?? []));
 </script>
 

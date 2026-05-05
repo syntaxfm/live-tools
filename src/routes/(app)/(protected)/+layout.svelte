@@ -8,7 +8,6 @@
 
 	const db = getDb();
 	const jazzContext = getJazzContext();
-	$inspect(jazzContext.session);
 	const isExternalSession = $derived(jazzContext.session?.authMode === 'external');
 
 	onMount(() => {

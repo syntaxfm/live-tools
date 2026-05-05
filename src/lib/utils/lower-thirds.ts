@@ -1,4 +1,4 @@
-import type { LowerThirdOverlay, ShowHost } from '$lib/schema';
+import type { ShowHost } from '$lib/schema';
 
 export const LOWER_THIRD_DISPLAY_MS = 10000;
 
@@ -43,25 +43,5 @@ export function getLowerThirdAsset(host: ShowHost): LowerThirdAsset {
 	return (
 		LOWER_THIRD_ASSETS.find((asset) => normalizedName.includes(asset.key)) ??
 		DEFAULT_LOWER_THIRD_ASSET
-	);
-}
-
-export function getCurrentLowerThirdOverlay(
-	overlays: readonly LowerThirdOverlay[]
-): LowerThirdOverlay | null {
-	return [...overlays].sort(compareLowerThirdOverlaysByRecency)[0] ?? null;
-}
-
-export function isLowerThirdBroadcastActive(updatedAt: Date, now = new Date()): boolean {
-	return now.getTime() - new Date(updatedAt).getTime() < LOWER_THIRD_DISPLAY_MS;
-}
-
-function compareLowerThirdOverlaysByRecency(
-	first: LowerThirdOverlay,
-	second: LowerThirdOverlay
-): number {
-	return (
-		new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime() ||
-		second.id.localeCompare(first.id)
 	);
 }

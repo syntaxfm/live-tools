@@ -1,27 +1,28 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getJazzContext, QuerySubscription } from 'jazz-tools/svelte';
 
 	import {
 		createAppUsersSubscription,
 		createCurrentAppUserSubscription
 	} from '$lib/components/auth/current-app-user.svelte';
-	import { createShowsSubscription } from '$lib/components/shows/show-queries.svelte';
-	import { app } from '$lib/schema';
+	import { createShow, deleteShow } from '$lib/components/shows/show-actions';
 	import {
 		compareShowsByRecency,
 		formatShowDate,
 		formatShowDateInput,
-		parseShowDateInput
+		parseShowDateInput,
+		parseShowStatus
 	} from '$lib/utils/shows';
 	import type { ShowStatus } from '$lib/utils/shows';
+	import { app } from '$lib/schema';
 
 	const db = getDb();
 	const jazzContext = getJazzContext();
 	const appUsers = createCurrentAppUserSubscription();
 	const allAppUsers = createAppUsersSubscription();
-	const shows = createShowsSubscription();
+	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
 	const appUser = $derived(appUsers.current?.[0] ?? null);
 	const sortedShows = $derived([...(shows.current ?? [])].sort(compareShowsByRecency));
 	const hostOptions = $derived(
@@ -32,6 +33,8 @@
 	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
 	const defaultShowDate = formatShowDateInput(new Date());
 
+	let deleteError = $state<string | null>(null);
+	let deletingShowId = $state<string | null>(null);
 	let formError = $state<string | null>(null);
 	let isCreating = $state(false);
 
@@ -52,7 +55,7 @@
 
 		const formData = new FormData(form);
 		const startsAtInput = formData.get('startsAt')?.toString();
-		const status = formData.get('status')?.toString() as ShowStatus | undefined;
+		const statusInput = formData.get('status')?.toString();
 		const hostIds = formData.getAll('hostIds').map((hostId) => hostId.toString());
 
 		if (!startsAtInput) {
@@ -60,7 +63,12 @@
 			return;
 		}
 
-		if (status !== 'draft' && status !== 'live' && status !== 'ended') {
+		let status: ShowStatus;
+
+		try {
+			status = parseShowStatus(statusInput ?? '');
+		} catch (error) {
+			console.error('Invalid show status', error);
 			formError = 'Invalid status';
 			return;
 		}
@@ -79,34 +87,17 @@
 		formError = null;
 
 		try {
-			const show = await db
-				.insert(app.shows, {
-					status,
-					audienceSubmissionsOpen: false,
-					createdById: appUser.id,
-					startsAt,
-					createdAt: new Date()
-				})
-				.wait({ tier: 'global' });
-
-			await Promise.all(
-				hostIds
-					.flatMap((hostId) => {
-						const host = hostOptions.find((option) => option.id === hostId);
-						return host ? [host] : [];
-					})
-					.map((host, position) =>
-						db
-							.insert(app.showHosts, {
-								showId: show.id,
-								hostId: host.id,
-								displayName: host.displayName,
-								avatarUrl: host.avatarUrl,
-								position
-							})
-							.wait({ tier: 'global' })
-					)
-			);
+			const show = await createShow({
+				createdById: appUser.id,
+				db,
+				hosts: hostIds.flatMap((hostId) => {
+					const host = hostOptions.find((option) => option.id === hostId);
+					return host ? [host] : [];
+				}),
+				isAdmin,
+				startsAt,
+				status
+			});
 
 			await goto(resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`));
 		} catch (error) {
@@ -116,29 +107,78 @@
 			isCreating = false;
 		}
 	}
+
+	async function handleDeleteShow(event: SubmitEvent): Promise<void> {
+		event.preventDefault();
+
+		if (!isAdmin) {
+			deleteError = 'Admin access required';
+			return;
+		}
+
+		const form = event.currentTarget;
+
+		if (!(form instanceof HTMLFormElement)) {
+			deleteError = 'Invalid form';
+			return;
+		}
+
+		const formData = new FormData(form);
+		const showId = formData.get('showId')?.toString();
+		const showLabel = formData.get('showLabel')?.toString() ?? 'this show';
+
+		if (!showId) {
+			deleteError = 'Show required';
+			return;
+		}
+
+		if (!window.confirm(`Delete ${showLabel}?`)) {
+			return;
+		}
+
+		deletingShowId = showId;
+		deleteError = null;
+
+		try {
+			await deleteShow({
+				db,
+				isAdmin,
+				showId
+			});
+		} catch (error) {
+			console.error('Unable to delete show', error);
+			deleteError = error instanceof Error ? error.message : 'Unable to delete show';
+		} finally {
+			deletingShowId = null;
+		}
+	}
 </script>
 
 <section class="surface" data-depth="medium">
 	<p class="section-label">Admin</p>
-	<h1>Shows</h1>
+	<h1>Manage shows</h1>
 
 	{#if appUsers.loading}
 		<p class="status" data-state="connecting">Loading profile</p>
 	{:else if appUser && isAdmin}
 		<form onsubmit={handleCreateShow}>
-			<label>
-				Date
-				<input name="startsAt" required type="date" value={defaultShowDate} />
-			</label>
+			<div class="form-row">
+				<label class="field">
+					Date
+					<input name="startsAt" required type="date" value={defaultShowDate} />
+				</label>
 
-			<label>
-				Status
-				<select name="status">
-					<option value="draft">Draft</option>
-					<option value="live">Live</option>
-					<option value="ended">Ended</option>
-				</select>
-			</label>
+				<label class="field">
+					Status
+					<select name="status">
+						<option value="draft">Draft</option>
+						<option value="live">Live</option>
+						<option value="ended">Ended</option>
+					</select>
+				</label>
+
+				<button disabled={isCreating} type="submit">Create</button>
+			</div>
 
 			{#if allAppUsers.loading}
 				<p class="status" data-state="connecting">Loading hosts</p>
@@ -148,15 +188,13 @@
 				<fieldset>
 					<legend>Hosts</legend>
 					{#each hostOptions as host (host.id)}
-						<label>
+						<label class="checkbox-field">
 							<input checked name="hostIds" type="checkbox" value={host.id} />
 							{host.displayName}
 						</label>
 					{/each}
 				</fieldset>
 			{/if}
-
-			<button disabled={isCreating} type="submit">Create</button>
 
 			{#if formError}
 				<p class="status" data-state="warning">{formError}</p>
@@ -179,15 +217,29 @@
 			<ul>
 				{#each sortedShows as show (show.id)}
 					<li>
-						<a href={resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`)}
-							>{formatShowDate(show.startsAt)}</a
-						>
-						<span class="badge">{show.status}</span>
+						<p>
+							<a href={resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`)}
+								>{formatShowDate(show.startsAt)}</a
+							>
+							<span class="badge">{show.status}</span>
+							<span class="badge">{show.id}</span>
+						</p>
+						<form class="inline-actions" onsubmit={handleDeleteShow}>
+							<input name="showId" type="hidden" value={show.id} />
+							<input name="showLabel" type="hidden" value={formatShowDate(show.startsAt)} />
+							<button data-variant="danger" disabled={deletingShowId !== null} type="submit">
+								{deletingShowId === show.id ? 'Deleting' : 'Delete'}
+							</button>
+						</form>
 					</li>
 				{/each}
 			</ul>
 		{:else}
 			<h2>No shows</h2>
+		{/if}
+
+		{#if deleteError}
+			<p class="status" data-state="warning">{deleteError}</p>
 		{/if}
 	</section>
 {/if}

@@ -19,6 +19,7 @@ const schema = {
 		.table({
 			status: s.enum('draft', 'live', 'ended').default('draft'),
 			audienceSubmissionsOpen: s.boolean().default(false),
+			activeLowerThirdShowHostId: s.ref('showHosts').optional(),
 			createdById: s.ref('appUsers'),
 			startsAt: s.timestamp(),
 			endedAt: s.timestamp().optional(),
@@ -39,6 +40,7 @@ const schema = {
 		.index('byShowPosition', ['showId', 'position'])
 		.index('byShowHost', ['showId', 'hostId']),
 
+	// Host-authored source links for show prep. These can later become tool candidates.
 	hostLinks: s
 		.table({
 			showId: s.ref('shows'),
@@ -70,19 +72,12 @@ const schema = {
 		.index('byShowKindStatus', ['showId', 'kind', 'status'])
 		.index('byShowAuthor', ['showId', 'authorId']),
 
+	// Deprecated: use audienceSubmissions.isFeatured for featured audience submissions.
+	// Retained only for legacy cleanup; do not use for overlay state.
 	featuredSubmissionOverlays: s
 		.table({
 			showId: s.ref('shows'),
 			activeSubmissionId: s.ref('audienceSubmissions').optional(),
-			updatedById: s.ref('appUsers'),
-			updatedAt: s.timestamp()
-		})
-		.index('byShow', ['showId']),
-
-	lowerThirdOverlays: s
-		.table({
-			showId: s.ref('shows'),
-			activeShowHostId: s.ref('showHosts').optional(),
 			updatedById: s.ref('appUsers'),
 			updatedAt: s.timestamp()
 		})
@@ -101,6 +96,8 @@ const schema = {
 		.index('bySubmissionVoter', ['submissionId', 'voterId'])
 		.index('byShowVoter', ['showId', 'voterId']),
 
+	// Normalized options for tool polls. Each candidate is copied from a host link
+	// or an approved audience submission so votes can target one table.
 	toolCandidates: s
 		.table({
 			showId: s.ref('shows'),
@@ -236,7 +233,6 @@ export type Show = s.RowOf<typeof app.shows>;
 export type ShowHost = s.RowOf<typeof app.showHosts>;
 export type AudienceSubmission = s.RowOf<typeof app.audienceSubmissions>;
 export type FeaturedSubmissionOverlay = s.RowOf<typeof app.featuredSubmissionOverlays>;
-export type LowerThirdOverlay = s.RowOf<typeof app.lowerThirdOverlays>;
 export type SubmissionVote = s.RowOf<typeof app.submissionVotes>;
 export type ToolCandidate = s.RowOf<typeof app.toolCandidates>;
 export type FeudQuestion = s.RowOf<typeof app.feudQuestions>;
@@ -246,6 +242,5 @@ export type ShowInsert = s.InsertOf<typeof app.shows>;
 export type ShowHostInsert = s.InsertOf<typeof app.showHosts>;
 export type AudienceSubmissionInsert = s.InsertOf<typeof app.audienceSubmissions>;
 export type FeaturedSubmissionOverlayInsert = s.InsertOf<typeof app.featuredSubmissionOverlays>;
-export type LowerThirdOverlayInsert = s.InsertOf<typeof app.lowerThirdOverlays>;
 export type SubmissionVoteInsert = s.InsertOf<typeof app.submissionVotes>;
 export type FeudQuestionInsert = s.InsertOf<typeof app.feudQuestions>;

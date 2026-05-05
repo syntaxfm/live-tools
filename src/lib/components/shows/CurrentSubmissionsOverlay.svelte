@@ -1,12 +1,18 @@
 <script lang="ts">
 	import SubmissionsOverlay from '$lib/components/shows/SubmissionsOverlay.svelte';
-	import { createShowsSubscription } from '$lib/components/shows/show-queries.svelte';
-	import { getCurrentShow } from '$lib/utils/shows';
+	import { app } from '$lib/schema';
+	import { QuerySubscription } from 'jazz-tools/svelte';
 
-	const shows = createShowsSubscription();
-	const currentShow = $derived(getCurrentShow(shows.current ?? []));
+	const shows = new QuerySubscription(
+		app.shows
+			.where({
+				status: 'live'
+			})
+			.orderBy('startsAt', 'desc'),
+		{ tier: 'global' }
+	);
 </script>
 
-{#if currentShow}
-	<SubmissionsOverlay showId={currentShow.id} />
+{#if shows.current?.[0]}
+	<SubmissionsOverlay showId={shows.current[0].id} />
 {/if}

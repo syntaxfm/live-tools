@@ -7,10 +7,7 @@
 		featureAudienceSubmission,
 		moderateAudienceSubmission
 	} from '$lib/components/shows/submission-actions';
-	import {
-		createFeaturedSubmissionOverlaySubscription,
-		createShowSubmissionsSubscription
-	} from '$lib/components/shows/submission-queries.svelte';
+	import { createShowApprovedSubmissionsSubscription } from '$lib/components/shows/submission-queries.svelte';
 	import {
 		AUDIENCE_SUBMISSION_STATUSES,
 		compareAudienceSubmissionsByNewest,
@@ -27,14 +24,15 @@
 	const db = getDb();
 	const jazzContext = getJazzContext();
 	const appUsers = createCurrentAppUserSubscription();
-	const submissions = createShowSubmissionsSubscription(() => showId);
-	const featuredOverlays = createFeaturedSubmissionOverlaySubscription(() => showId);
+	const submissions = createShowApprovedSubmissionsSubscription(() => showId);
 	const appUser = $derived(appUsers.current?.[0] ?? null);
 	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
 	const sortedSubmissions = $derived(
 		[...(submissions.current ?? [])].sort(compareAudienceSubmissionsByNewest)
 	);
-	const featuredOverlay = $derived(featuredOverlays.current?.[0] ?? null);
+	const featuredSubmission = $derived(
+		sortedSubmissions.find((submission) => submission.isFeatured) ?? null
+	);
 
 	let pendingActionId = $state<string | null>(null);
 	let error = $state<string | null>(null);
@@ -59,16 +57,6 @@
 				status,
 				submissionId
 			});
-
-			if (status !== 'approved' && featuredOverlay?.activeSubmissionId === submissionId) {
-				await clearFeaturedSubmission({
-					appUserId: appUser.id,
-					db,
-					existingOverlay: featuredOverlay,
-					isAdmin,
-					showId
-				});
-			}
 		} catch (caughtError) {
 			console.error('Unable to moderate submission', caughtError);
 			error = 'Unable to moderate submission';
@@ -95,9 +83,7 @@
 
 		try {
 			await featureAudienceSubmission({
-				appUserId: appUser.id,
 				db,
-				existingOverlay: featuredOverlay,
 				isAdmin,
 				showId,
 				submission
@@ -121,9 +107,7 @@
 
 		try {
 			await clearFeaturedSubmission({
-				appUserId: appUser.id,
 				db,
-				existingOverlay: featuredOverlay,
 				isAdmin,
 				showId
 			});
@@ -182,7 +166,7 @@
 		<h3>No submissions</h3>
 	{/if}
 
-	{#if featuredOverlay?.activeSubmissionId}
+	{#if featuredSubmission}
 		<button
 			disabled={pendingActionId === 'clear-featured'}
 			type="button"

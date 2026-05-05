@@ -5,6 +5,8 @@ if (!process.env.BACKEND_SECRET) {
 	throw new Error('BACKEND_SECRET is required for Jazz auth');
 }
 
+let context: JazzContext | null = null;
+
 function createAuthJazzContext(): JazzContext {
 	const appId = process.env.APP_ID || process.env.PUBLIC_JAZZ_APP_ID;
 	const serverUrl = process.env.SYNC_SERVER_URL || process.env.PUBLIC_JAZZ_SERVER_URL;
@@ -29,5 +31,6 @@ function createAuthJazzContext(): JazzContext {
 }
 
 export function authJazzContext(): JazzContext {
-	return createAuthJazzContext();
+	context ??= createAuthJazzContext();
+	return context;
 }

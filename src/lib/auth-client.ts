@@ -8,7 +8,6 @@ export const authClient = createAuthClient({
 export async function getJwtFromBetterAuth(): Promise<string | null> {
 	try {
 		const token = await authClient.token();
-		console.log('token', token);
 
 		if (token.error) {
 			console.error('Error getting JWT token:', token.error.message);

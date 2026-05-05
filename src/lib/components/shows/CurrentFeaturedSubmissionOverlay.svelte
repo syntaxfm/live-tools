@@ -1,9 +1,11 @@
 <script lang="ts">
 	import FeaturedSubmissionOverlay from '$lib/components/shows/FeaturedSubmissionOverlay.svelte';
-	import { createShowsSubscription } from '$lib/components/shows/show-queries.svelte';
-	import { getCurrentShow } from '$lib/utils/shows';
+	import { app } from '$lib/schema';
 
-	const shows = createShowsSubscription();
+	import { getCurrentShow } from '$lib/utils/shows';
+	import { QuerySubscription } from 'jazz-tools/svelte';
+
+	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
 	const currentShow = $derived(getCurrentShow(shows.current ?? []));
 </script>
 

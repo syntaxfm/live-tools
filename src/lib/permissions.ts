@@ -80,17 +80,17 @@ export const permissions = s.definePermissions(
 		);
 		policy.shows.allowInsert.where(currentUserIsAdmin);
 		policy.shows.allowUpdate.where(currentUserIsAdmin);
-		policy.shows.allowDelete.never();
+		policy.shows.allowDelete.where(currentUserIsAdmin);
 
 		policy.showHosts.allowRead.where(canReadShow);
 		policy.showHosts.allowInsert.where(currentUserIsAdmin);
 		policy.showHosts.allowUpdate.where(currentUserIsAdmin);
-		policy.showHosts.allowDelete.never();
+		policy.showHosts.allowDelete.where(currentUserIsAdmin);
 
 		policy.hostLinks.allowRead.where(canReadShow);
 		policy.hostLinks.allowInsert.where(currentUserIsAdmin);
 		policy.hostLinks.allowUpdate.where(currentUserIsAdmin);
-		policy.hostLinks.allowDelete.never();
+		policy.hostLinks.allowDelete.where(currentUserIsAdmin);
 
 		policy.audienceSubmissions.allowRead.where((submission) =>
 			anyOf([
@@ -122,17 +122,12 @@ export const permissions = s.definePermissions(
 			])
 		);
 		policy.audienceSubmissions.allowUpdate.where(currentUserIsAdmin);
-		policy.audienceSubmissions.allowDelete.never();
+		policy.audienceSubmissions.allowDelete.where(currentUserIsAdmin);
 
 		policy.featuredSubmissionOverlays.allowRead.where(canReadShow);
 		policy.featuredSubmissionOverlays.allowInsert.where(currentUserIsAdmin);
 		policy.featuredSubmissionOverlays.allowUpdate.where(currentUserIsAdmin);
-		policy.featuredSubmissionOverlays.allowDelete.never();
-
-		policy.lowerThirdOverlays.allowRead.where(canReadShow);
-		policy.lowerThirdOverlays.allowInsert.where(currentUserIsAdmin);
-		policy.lowerThirdOverlays.allowUpdate.where(currentUserIsAdmin);
-		policy.lowerThirdOverlays.allowDelete.never();
+		policy.featuredSubmissionOverlays.allowDelete.where(currentUserIsAdmin);
 
 		policy.submissionVotes.allowRead.where(canReadShow);
 		policy.submissionVotes.allowInsert.where((vote) =>
@@ -169,17 +164,17 @@ export const permissions = s.definePermissions(
 				})
 			])
 		);
-		policy.submissionVotes.allowDelete.never();
+		policy.submissionVotes.allowDelete.where(currentUserIsAdmin);
 
 		policy.toolCandidates.allowRead.where(canReadShow);
 		policy.toolCandidates.allowInsert.where(currentUserIsAdmin);
 		policy.toolCandidates.allowUpdate.where(currentUserIsAdmin);
-		policy.toolCandidates.allowDelete.never();
+		policy.toolCandidates.allowDelete.where(currentUserIsAdmin);
 
 		policy.toolPolls.allowRead.where(canReadShow);
 		policy.toolPolls.allowInsert.where(currentUserIsAdmin);
 		policy.toolPolls.allowUpdate.where(currentUserIsAdmin);
-		policy.toolPolls.allowDelete.never();
+		policy.toolPolls.allowDelete.where(currentUserIsAdmin);
 
 		policy.toolVotes.allowRead.where(currentUserIsAdmin);
 		policy.toolVotes.allowInsert.where((vote) =>
@@ -206,17 +201,17 @@ export const permissions = s.definePermissions(
 				policy.shows.exists.where({ id: vote.showId, status: 'live' })
 			])
 		);
-		policy.toolVotes.allowDelete.never();
+		policy.toolVotes.allowDelete.where(currentUserIsAdmin);
 
 		policy.toolPollResults.allowRead.where(canReadShow);
 		policy.toolPollResults.allowInsert.where(currentUserIsAdmin);
 		policy.toolPollResults.allowUpdate.where(currentUserIsAdmin);
-		policy.toolPollResults.allowDelete.never();
+		policy.toolPollResults.allowDelete.where(currentUserIsAdmin);
 
 		policy.feudQuestions.allowRead.where(canReadShow);
 		policy.feudQuestions.allowInsert.where(currentUserIsAdmin);
 		policy.feudQuestions.allowUpdate.where(currentUserIsAdmin);
-		policy.feudQuestions.allowDelete.never();
+		policy.feudQuestions.allowDelete.where(currentUserIsAdmin);
 
 		policy.feudAnswers.allowRead.where(currentUserIsAdmin);
 		policy.feudAnswers.allowInsert.where((answer) =>
@@ -243,21 +238,21 @@ export const permissions = s.definePermissions(
 				})
 			])
 		);
-		policy.feudAnswers.allowDelete.never();
+		policy.feudAnswers.allowDelete.where(currentUserIsAdmin);
 
 		policy.feudBuckets.allowRead.where(currentUserIsAdmin);
 		policy.feudBuckets.allowInsert.where(currentUserIsAdmin);
 		policy.feudBuckets.allowUpdate.where(currentUserIsAdmin);
-		policy.feudBuckets.allowDelete.never();
+		policy.feudBuckets.allowDelete.where(currentUserIsAdmin);
 
 		policy.feudBoardSlots.allowRead.where(canReadShow);
 		policy.feudBoardSlots.allowInsert.where(currentUserIsAdmin);
 		policy.feudBoardSlots.allowUpdate.where(currentUserIsAdmin);
-		policy.feudBoardSlots.allowDelete.never();
+		policy.feudBoardSlots.allowDelete.where(currentUserIsAdmin);
 
 		policy.feudStrikes.allowRead.where(canReadShow);
 		policy.feudStrikes.allowInsert.where(currentUserIsAdmin);
 		policy.feudStrikes.allowUpdate.where(currentUserIsAdmin);
-		policy.feudStrikes.allowDelete.never();
+		policy.feudStrikes.allowDelete.where(currentUserIsAdmin);
 	}
 );

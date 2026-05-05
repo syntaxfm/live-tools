@@ -62,3 +62,6 @@
 - Prefer nested SvelteKit layouts for shared route UI instead of thin wrapper components.
 - Components should read Jazz managers/subscriptions directly when they own that view.
 - Use props at real generic boundaries only; do not prop-drill route params or Jazz manager state through pass-through components.
+
+ALWAYS ASK BEFORE UPDATING the schema!!
+Do not start additional jazz dev processes use the already running one

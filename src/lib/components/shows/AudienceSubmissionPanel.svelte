@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { dev } from '$app/environment';
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getJazzContext, QuerySubscription } from 'jazz-tools/svelte';
 
 	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
-	import { createShowSubscription } from '$lib/components/shows/show-queries.svelte';
 	import { saveAudienceSubmission } from '$lib/components/shows/submission-actions';
-	import { createOwnShowSubmissionSubscription } from '$lib/components/shows/submission-queries.svelte';
 	import { canEditAudienceSubmission, getLatestAudienceSubmission } from '$lib/utils/submissions';
+	import { app } from '$lib/schema';
 
 	interface Props {
 		showId: string | undefined;
@@ -17,11 +16,15 @@
 	const db = getDb();
 	const jazzContext = getJazzContext();
 	const appUsers = createCurrentAppUserSubscription();
-	const shows = createShowSubscription(() => showId);
+	const shows = new QuerySubscription(
+		() => (showId ? app.shows.where({ id: showId }) : undefined),
+		{ tier: 'global' }
+	);
 	const appUser = $derived(appUsers.current?.[0] ?? null);
-	const ownSubmissions = createOwnShowSubmissionSubscription(
-		() => showId,
-		() => appUser?.id
+
+	const ownSubmissions = new QuerySubscription(
+		() => (showId ? app.audienceSubmissions.where({ showId, authorId: appUser?.id }) : undefined),
+		{ tier: 'global' }
 	);
 
 	let status = $state<'idle' | 'submitting' | 'submitted'>('idle');
@@ -95,16 +98,12 @@
 </script>
 
 <section class="surface" data-depth="medium">
-	{#if shows.loading || appUsers.loading}
-		<h2>Loading</h2>
-	{:else if ownSubmission}
+	{#if ownSubmission}
 		<h3>{ownSubmission.title ?? ownSubmission.url}</h3>
 		<h4>{ownSubmission.url}</h4>
 		<p>
 			<span class="badge">{ownSubmission.status}</span>
 		</p>
-	{:else if status === 'submitted'}
-		<p class="status" data-state="success">Submitted</p>
 	{:else if canSubmit}
 		<form onchange={handleChange} onsubmit={handleSubmit}>
 			<label class="field">

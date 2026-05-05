@@ -2,21 +2,16 @@
 	import { getDb, getJazzContext } from 'jazz-tools/svelte';
 	import { onDestroy } from 'svelte';
 
-	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import {
-		createLowerThirdOverlaySubscription,
-		createShowHostsSubscription
+		createShowHostsSubscription,
+		createShowSubscription
 	} from '$lib/components/shows/show-queries.svelte';
 	import {
 		broadcastLowerThird,
 		clearLowerThird,
 		updateShowHostLowerThirdTitle
 	} from '$lib/components/shows/show-actions';
-	import {
-		getCurrentLowerThirdOverlay,
-		getLowerThirdTitle,
-		LOWER_THIRD_DISPLAY_MS
-	} from '$lib/utils/lower-thirds';
+	import { getLowerThirdTitle, LOWER_THIRD_DISPLAY_MS } from '$lib/utils/lower-thirds';
 	import { compareShowHostsByPosition } from '$lib/utils/shows';
 
 	interface Props {
@@ -27,15 +22,15 @@
 
 	const db = getDb();
 	const jazzContext = getJazzContext();
-	const appUsers = createCurrentAppUserSubscription();
+	const unsubscribeMutationError = db.onMutationError((event) => {
+		console.error('[jazz:mutation-error]', event);
+	});
+	const shows = createShowSubscription(() => showId);
 	const hosts = createShowHostsSubscription(() => showId);
-	const lowerThirdOverlays = createLowerThirdOverlaySubscription(() => showId);
-	const appUser = $derived(appUsers.current?.[0] ?? null);
+	const show = $derived(shows.current?.[0] ?? null);
 	const sortedHosts = $derived([...(hosts.current ?? [])].sort(compareShowHostsByPosition));
-	const lowerThirdOverlayRows = $derived(lowerThirdOverlays.current ?? []);
-	const lowerThirdOverlay = $derived(getCurrentLowerThirdOverlay(lowerThirdOverlayRows));
 	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
-	const activeShowHostId = $derived(lowerThirdOverlay?.activeShowHostId ?? null);
+	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
 
 	let error = $state<string | null>(null);
 	let pendingHostId = $state<string | null>(null);
@@ -44,6 +39,7 @@
 
 	onDestroy(() => {
 		clearAutoHideTimer();
+		unsubscribeMutationError();
 	});
 
 	async function handleTitleChange(event: Event): Promise<void> {
@@ -90,7 +86,7 @@
 
 		const host = sortedHosts.find((candidate) => candidate.id === button.dataset.hostId);
 
-		if (!appUser || !showId || !host) {
+		if (!showId || !host) {
 			error = 'Unable to broadcast';
 			return;
 		}
@@ -99,16 +95,14 @@
 		error = null;
 
 		try {
-			const broadcastedAt = await broadcastLowerThird({
-				appUserId: appUser.id,
+			clearAutoHideTimer();
+			await broadcastLowerThird({
 				db,
-				existingOverlay: lowerThirdOverlay,
-				existingOverlays: lowerThirdOverlayRows,
 				host,
 				isAdmin,
 				showId
 			});
-			scheduleAutoHide(host.id, broadcastedAt);
+			scheduleAutoHide();
 		} catch (caughtError) {
 			console.error('Unable to broadcast lower third', caughtError);
 			error = 'Unable to broadcast';
@@ -123,7 +117,7 @@
 	}
 
 	async function clearActiveLowerThird(shouldShowPending: boolean): Promise<void> {
-		if (!appUser || !showId) {
+		if (!showId) {
 			error = 'Unable to hide lower third';
 			return;
 		}
@@ -133,11 +127,10 @@
 		}
 		error = null;
 
+		console.log('hiding lower third for show', showId);
 		try {
 			await clearLowerThird({
-				appUserId: appUser.id,
 				db,
-				existingOverlays: lowerThirdOverlayRows,
 				isAdmin,
 				showId
 			});
@@ -151,22 +144,9 @@
 		}
 	}
 
-	function scheduleAutoHide(showHostId: string, broadcastedAt: Date): void {
-		clearAutoHideTimer();
-
+	function scheduleAutoHide(): void {
 		autoHideTimer = setTimeout(() => {
 			autoHideTimer = null;
-			const currentUpdatedAt = lowerThirdOverlay
-				? new Date(lowerThirdOverlay.updatedAt).getTime()
-				: null;
-
-			if (
-				lowerThirdOverlay?.activeShowHostId !== showHostId ||
-				currentUpdatedAt !== broadcastedAt.getTime()
-			) {
-				return;
-			}
-
 			void clearActiveLowerThird(false);
 		}, LOWER_THIRD_DISPLAY_MS);
 	}
@@ -184,12 +164,12 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">Lower thirds</p>
 
-	{#if hosts.loading || lowerThirdOverlays.loading || appUsers.loading}
+	{#if hosts.loading || shows.loading}
 		<h2>Loading</h2>
+	{:else if shows.error}
+		<h2>{shows.error.message}</h2>
 	{:else if hosts.error}
 		<h2>{hosts.error.message}</h2>
-	{:else if lowerThirdOverlays.error}
-		<h2>{lowerThirdOverlays.error.message}</h2>
 	{:else if sortedHosts.length}
 		<ul class="lower-third-controls">
 			{#each sortedHosts as host (host.id)}
