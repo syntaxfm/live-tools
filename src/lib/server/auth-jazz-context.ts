@@ -1,23 +1,15 @@
-import { createDb } from 'jazz-tools';
-import type { Db } from 'jazz-tools';
-import { dev } from '$app/environment';
-import { env as privateEnv } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
+import { createJazzContext } from 'jazz-tools/backend';
+import type { JazzContext } from 'jazz-tools/backend';
 
-import { app } from '$lib/schema';
+if (!process.env.BACKEND_SECRET) {
+	throw new Error('BACKEND_SECRET is required for Jazz auth');
+}
 
-let dbPromise: Promise<Db> | null = null;
+let context: JazzContext | null = null;
 
-async function createAuthJazzDb(): Promise<Db> {
-	const appId =
-		privateEnv.APP_ID || publicEnv.PUBLIC_JAZZ_APP_ID || process.env.PUBLIC_JAZZ_APP_ID;
-	const serverUrl =
-		privateEnv.SYNC_SERVER_URL ||
-		publicEnv.PUBLIC_JAZZ_SERVER_URL ||
-		process.env.PUBLIC_JAZZ_SERVER_URL;
-	const adminSecret =
-		privateEnv.JAZZ_ADMIN_SECRET || process.env.JAZZ_ADMIN_SECRET || privateEnv.BACKEND_SECRET;
-	const backendSecret = privateEnv.BACKEND_SECRET || process.env.BACKEND_SECRET || adminSecret;
+function createAuthJazzContext(): JazzContext {
+	const appId = process.env.APP_ID || process.env.PUBLIC_JAZZ_APP_ID;
+	const serverUrl = process.env.SYNC_SERVER_URL || process.env.PUBLIC_JAZZ_SERVER_URL;
 
 	if (!appId) {
 		throw new Error('APP_ID or PUBLIC_JAZZ_APP_ID is required for Jazz auth');
@@ -27,35 +19,18 @@ async function createAuthJazzDb(): Promise<Db> {
 		throw new Error('SYNC_SERVER_URL or PUBLIC_JAZZ_SERVER_URL is required for Jazz auth');
 	}
 
-	if (!backendSecret) {
-		throw new Error('JAZZ_ADMIN_SECRET or BACKEND_SECRET is required for Jazz auth');
-	}
-
-	if (dev) {
-		const { createJazzContext } = await import('jazz-tools/backend');
-
-		return createJazzContext({
-			appId,
-			driver: { type: 'memory' },
-			serverUrl,
-			env: 'dev',
-			userBranch: 'main',
-			backendSecret,
-			tier: 'global'
-		}).asBackend(app);
-	}
-
-	return createDb({
+	return createJazzContext({
 		appId,
 		driver: { type: 'memory' },
 		serverUrl,
-		env: 'prod',
+		env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
 		userBranch: 'main',
-		adminSecret: adminSecret || backendSecret
+		backendSecret: process.env.BACKEND_SECRET,
+		tier: 'global'
 	});
 }
 
-export async function authJazzDb(): Promise<Db> {
-	dbPromise ??= createAuthJazzDb();
-	return dbPromise;
+export function authJazzContext(): JazzContext {
+	context ??= createAuthJazzContext();
+	return context;
 }

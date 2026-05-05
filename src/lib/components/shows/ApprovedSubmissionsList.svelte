@@ -75,9 +75,7 @@
 </script>
 
 <section class="surface" data-depth="medium">
-	{#if submissions.loading || votes.loading || appUsers.loading}
-		<p class="status" data-state="connecting">Loading</p>
-	{:else if submissions.error || votes.error || ownVotes.error}
+	{#if submissions.error || votes.error || ownVotes.error}
 		<p class="status" data-state="warning">
 			{(submissions.error ?? votes.error ?? ownVotes.error)?.message}
 		</p>
@@ -89,8 +87,9 @@
 				{@const isUpvoted = Boolean(ownVote && ownVote.value > 0)}
 				{@const canVote = Boolean(appUser && submission.authorId !== appUser.id)}
 				<li>
+					<span class="badge" aria-label={`${voteCount} votes`}>{voteCount}</span>
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-					<a href={submission.url} rel="noreferrer" target="_blank"
+					<a class="submission-link" href={submission.url} rel="noreferrer" target="_blank"
 						>{getAudienceSubmissionTitle(submission)}</a
 					>
 					<p class="inline-actions">
@@ -105,7 +104,6 @@
 								{isUpvoted ? 'Upvoted' : 'Upvote'}
 							</button>
 						{/if}
-						<span class="badge" aria-label={`${voteCount} votes`}>{voteCount}</span>
 					</p>
 				</li>
 			{/each}
@@ -118,3 +116,13 @@
 		<p class="status" data-state="warning">{error}</p>
 	{/if}
 </section>
+
+<style>
+	li {
+		display: flex;
+	}
+
+	.inline-actions {
+		margin-left: auto;
+	}
+</style>

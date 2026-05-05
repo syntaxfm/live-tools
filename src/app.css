@@ -622,7 +622,6 @@ label,
 }
 
 .submission-list > li {
-	display: grid;
 	gap: 0.625rem;
 	padding: 0.75rem 0;
 	border-bottom: 1px solid var(--color-border-subtle);

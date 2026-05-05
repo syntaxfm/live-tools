@@ -2,7 +2,8 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 import { setAudienceSubmissionVoteForUser } from '$lib/components/shows/submission-vote-server-actions';
-import { authJazzDb } from '$lib/server/auth-jazz-context';
+import { app } from '$lib/schema';
+import { authJazzContext } from '$lib/server/auth-jazz-context';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.user) {
@@ -29,7 +30,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 	try {
 		await setAudienceSubmissionVoteForUser({
-			db: await authJazzDb(),
+			db: authJazzContext().asBackend(app),
 			isUpvoted,
 			showId,
 			submissionId,
