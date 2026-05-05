@@ -1,4 +1,4 @@
-import { PUBLIC_JAZZ_APP_ID } from '$env/static/public';
+import { env } from '$env/static/public';
 import type { DbConfig } from 'jazz-tools';
 
 type JazzStorageMode = 'default' | 'memory';
@@ -16,7 +16,8 @@ export function createJazzConfig({
 	localFirstSecret,
 	storageMode = 'default'
 }: CreateJazzConfigOptions): DbConfig {
-	const appId = PUBLIC_JAZZ_APP_ID;
+	const appId = env.PUBLIC_JAZZ_APP_ID;
+	console.log(appId);
 	const serverUrl = import.meta.env.PUBLIC_JAZZ_SERVER_URL;
 
 	if (!appId) {
