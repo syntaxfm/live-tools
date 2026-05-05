@@ -1,14 +1,8 @@
 import type { Db } from 'jazz-tools';
 
+import { resolve } from '$app/paths';
 import { app } from '$lib/schema';
-import type {
-	AppUser,
-	AudienceSubmission,
-	AudienceSubmissionInsert,
-	SubmissionVote,
-	SubmissionVoteInsert,
-	Show
-} from '$lib/schema';
+import type { AppUser, AudienceSubmission, AudienceSubmissionInsert, Show } from '$lib/schema';
 import { canEditAudienceSubmission } from '$lib/utils/submissions';
 import type { AudienceSubmissionKind, AudienceSubmissionStatus } from '$lib/utils/submissions';
 
@@ -48,8 +42,6 @@ interface FeatureAudienceSubmissionOptions {
 
 interface SetAudienceSubmissionVoteOptions {
 	appUser: AppUser | null;
-	db: Db;
-	existingVote: SubmissionVote | null;
 	isUpvoted: boolean;
 	showId: string;
 	submission: AudienceSubmission;
@@ -172,9 +164,7 @@ export async function moderateAudienceSubmission({
 					status
 				};
 
-	await db
-		.update(app.audienceSubmissions, submissionId, updates)
-		.wait({ tier: 'global' });
+	await db.update(app.audienceSubmissions, submissionId, updates).wait({ tier: 'global' });
 }
 
 export async function featureAudienceSubmission({
@@ -204,8 +194,6 @@ export async function featureAudienceSubmission({
 
 export async function setAudienceSubmissionVote({
 	appUser,
-	db,
-	existingVote,
 	isUpvoted,
 	showId,
 	submission
@@ -226,26 +214,21 @@ export async function setAudienceSubmissionVote({
 		throw new Error('Cannot vote on your own submission');
 	}
 
-	const value = isUpvoted ? 1 : 0;
+	const response = await fetch(resolve('/api/submission-votes'), {
+		body: JSON.stringify({
+			isUpvoted,
+			showId,
+			submissionId: submission.id
+		}),
+		headers: {
+			'content-type': 'application/json'
+		},
+		method: 'POST'
+	});
 
-	if (existingVote) {
-		await db
-			.update(app.submissionVotes, existingVote.id, {
-				value
-			})
-			.wait({ tier: 'global' });
-		return;
+	if (!response.ok) {
+		throw new Error('Unable to vote');
 	}
-
-	const insert: SubmissionVoteInsert = {
-		createdAt: new Date(),
-		showId,
-		submissionId: submission.id,
-		value,
-		voterId: appUser.id
-	};
-
-	await db.insert(app.submissionVotes, insert).wait({ tier: 'global' });
 }
 
 export async function clearFeaturedSubmission({
@@ -263,10 +246,7 @@ async function unfeatureShowSubmissions(
 	showId: string,
 	nextSubmissionId?: string
 ): Promise<void> {
-	const submissions = await db.all(
-		app.audienceSubmissions.where({ showId }),
-		{ tier: 'global' }
-	);
+	const submissions = await db.all(app.audienceSubmissions.where({ showId }), { tier: 'global' });
 
 	await Promise.all(
 		submissions

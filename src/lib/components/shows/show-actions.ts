@@ -1,8 +1,9 @@
 import type { Db } from 'jazz-tools';
 
 import { app } from '$lib/schema';
-import type { Show, ShowHost, ShowInsert } from '$lib/schema';
+import type { Show, ShowHost, ShowInsert, TickerMessage } from '$lib/schema';
 import type { ShowStatus } from '$lib/utils/shows';
+import { getNextTickerMessagePosition } from '$lib/utils/ticker-messages';
 
 interface AdminMutationOptions {
 	db: Db;
@@ -40,6 +41,16 @@ interface UpdateShowHostLowerThirdTitleOptions extends AdminMutationOptions {
 
 interface BroadcastLowerThirdOptions extends AdminMutationOptions {
 	host: ShowHost;
+}
+
+interface AddTickerMessageOptions extends AdminMutationOptions {
+	createdById: string;
+	messages: readonly TickerMessage[];
+	text: string;
+}
+
+interface DeleteTickerMessageOptions extends AdminMutationOptions {
+	message: TickerMessage;
 }
 
 // Jazz currently persists this ref reliably when it is a UUID, but clearing it to null
@@ -186,6 +197,48 @@ export async function clearLowerThird({
 	}
 }
 
+export async function addTickerMessage({
+	createdById,
+	db,
+	isAdmin,
+	messages,
+	showId,
+	text
+}: AddTickerMessageOptions): Promise<void> {
+	assertAdmin(isAdmin);
+
+	const trimmedText = text.trim();
+
+	if (!trimmedText) {
+		throw new TypeError('Ticker message required');
+	}
+
+	await db
+		.insert(app.tickerMessages, {
+			showId,
+			text: trimmedText,
+			position: getNextTickerMessagePosition(messages),
+			createdById,
+			createdAt: new Date()
+		})
+		.wait({ tier: 'global' });
+}
+
+export async function deleteTickerMessage({
+	db,
+	isAdmin,
+	message,
+	showId
+}: DeleteTickerMessageOptions): Promise<void> {
+	assertAdmin(isAdmin);
+
+	if (message.showId !== showId) {
+		throw new Error('Ticker message does not belong to show');
+	}
+
+	await db.delete(app.tickerMessages, message.id).wait({ tier: 'global' });
+}
+
 export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions): Promise<void> {
 	assertAdmin(isAdmin);
 
@@ -200,6 +253,7 @@ export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions):
 		hostLinks,
 		showHosts,
 		submissionVotes,
+		tickerMessages,
 		toolCandidates,
 		toolPollResults,
 		toolPolls,
@@ -215,6 +269,7 @@ export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions):
 		db.all(app.hostLinks.where({ showId }), { tier: 'global' }),
 		db.all(app.showHosts.where({ showId }), { tier: 'global' }),
 		db.all(app.submissionVotes.where({ showId }), { tier: 'global' }),
+		db.all(app.tickerMessages.where({ showId }), { tier: 'global' }),
 		db.all(app.toolCandidates.where({ showId }), { tier: 'global' }),
 		db.all(app.toolPollResults.where({ showId }), { tier: 'global' }),
 		db.all(app.toolPolls.where({ showId }), { tier: 'global' }),
@@ -297,6 +352,12 @@ export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions):
 
 	await Promise.all(
 		hostLinks.map((link) => db.delete(app.hostLinks, link.id).wait({ tier: 'global' }))
+	);
+
+	await Promise.all(
+		tickerMessages.map((message) =>
+			db.delete(app.tickerMessages, message.id).wait({ tier: 'global' })
+		)
 	);
 
 	await Promise.all(

@@ -82,7 +82,7 @@ export const permissions = s.definePermissions(
 		policy.shows.allowUpdate.where(currentUserIsAdmin);
 		policy.shows.allowDelete.where(currentUserIsAdmin);
 
-		policy.showHosts.allowRead.where(canReadShow);
+		policy.showHosts.allowRead.where(anyOf([currentUserIsAdmin, canReadShow]));
 		policy.showHosts.allowInsert.where(currentUserIsAdmin);
 		policy.showHosts.allowUpdate.where(currentUserIsAdmin);
 		policy.showHosts.allowDelete.where(currentUserIsAdmin);
@@ -91,6 +91,11 @@ export const permissions = s.definePermissions(
 		policy.hostLinks.allowInsert.where(currentUserIsAdmin);
 		policy.hostLinks.allowUpdate.where(currentUserIsAdmin);
 		policy.hostLinks.allowDelete.where(currentUserIsAdmin);
+
+		policy.tickerMessages.allowRead.where(canReadShow);
+		policy.tickerMessages.allowInsert.where(currentUserIsAdmin);
+		policy.tickerMessages.allowUpdate.where(currentUserIsAdmin);
+		policy.tickerMessages.allowDelete.where(currentUserIsAdmin);
 
 		policy.audienceSubmissions.allowRead.where((submission) =>
 			anyOf([
@@ -130,40 +135,8 @@ export const permissions = s.definePermissions(
 		policy.featuredSubmissionOverlays.allowDelete.where(currentUserIsAdmin);
 
 		policy.submissionVotes.allowRead.where(canReadShow);
-		policy.submissionVotes.allowInsert.where((vote) =>
-			allOf([
-				currentSessionIsExternal,
-				{ value: { in: [0, 1] } },
-				currentUserIsNotBanned(vote.voterId),
-				policy.audienceSubmissions.exists.where({
-					authorId: { ne: vote.voterId },
-					id: vote.submissionId,
-					showId: vote.showId,
-					status: 'approved'
-				}),
-				policy.shows.exists.where({
-					id: vote.showId,
-					status: { in: ['live', 'ended'] }
-				})
-			])
-		);
-		policy.submissionVotes.allowUpdate.where((vote) =>
-			allOf([
-				currentSessionIsExternal,
-				{ value: { in: [0, 1] } },
-				currentUserIsNotBanned(vote.voterId),
-				policy.audienceSubmissions.exists.where({
-					authorId: { ne: vote.voterId },
-					id: vote.submissionId,
-					showId: vote.showId,
-					status: 'approved'
-				}),
-				policy.shows.exists.where({
-					id: vote.showId,
-					status: { in: ['live', 'ended'] }
-				})
-			])
-		);
+		policy.submissionVotes.allowInsert.never();
+		policy.submissionVotes.allowUpdate.never();
 		policy.submissionVotes.allowDelete.where(currentUserIsAdmin);
 
 		policy.toolCandidates.allowRead.where(canReadShow);

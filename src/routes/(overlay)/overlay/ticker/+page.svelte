@@ -1,5 +1,5 @@
 <script lang="ts">
-	import CurrentOverlayShow from '$lib/components/shows/CurrentOverlayShow.svelte';
+	import CurrentTickerOverlay from '$lib/components/shows/CurrentTickerOverlay.svelte';
 </script>
 
-<CurrentOverlayShow feature="ticker" />
+<CurrentTickerOverlay />

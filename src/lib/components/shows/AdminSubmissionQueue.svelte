@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getJazzContext, QuerySubscription } from 'jazz-tools/svelte';
 
 	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import {
@@ -7,7 +7,7 @@
 		featureAudienceSubmission,
 		moderateAudienceSubmission
 	} from '$lib/components/shows/submission-actions';
-	import { createShowApprovedSubmissionsSubscription } from '$lib/components/shows/submission-queries.svelte';
+	import { app } from '$lib/schema';
 	import {
 		AUDIENCE_SUBMISSION_STATUSES,
 		compareAudienceSubmissionsByNewest,
@@ -24,7 +24,10 @@
 	const db = getDb();
 	const jazzContext = getJazzContext();
 	const appUsers = createCurrentAppUserSubscription();
-	const submissions = createShowApprovedSubmissionsSubscription(() => showId);
+	const submissions = new QuerySubscription(
+		() => (showId ? app.audienceSubmissions.where({ showId }) : undefined),
+		{ tier: 'global' }
+	);
 	const appUser = $derived(appUsers.current?.[0] ?? null);
 	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
 	const sortedSubmissions = $derived(

@@ -53,6 +53,17 @@ const schema = {
 		.index('byShowHost', ['showId', 'showHostId'])
 		.index('byShowPosition', ['showId', 'position']),
 
+	tickerMessages: s
+		.table({
+			showId: s.ref('shows'),
+			text: s.string(),
+			position: s.int(),
+			createdById: s.ref('appUsers'),
+			createdAt: s.timestamp(),
+			updatedAt: s.timestamp().optional()
+		})
+		.index('byShowPosition', ['showId', 'position']),
+
 	audienceSubmissions: s
 		.table({
 			showId: s.ref('shows'),
@@ -231,6 +242,7 @@ export const app: s.App<AppSchema> = s.defineApp(schema);
 export type AppUser = s.RowOf<typeof app.appUsers>;
 export type Show = s.RowOf<typeof app.shows>;
 export type ShowHost = s.RowOf<typeof app.showHosts>;
+export type TickerMessage = s.RowOf<typeof app.tickerMessages>;
 export type AudienceSubmission = s.RowOf<typeof app.audienceSubmissions>;
 export type FeaturedSubmissionOverlay = s.RowOf<typeof app.featuredSubmissionOverlays>;
 export type SubmissionVote = s.RowOf<typeof app.submissionVotes>;
@@ -240,6 +252,7 @@ export type FeudBoardSlot = s.RowOf<typeof app.feudBoardSlots>;
 
 export type ShowInsert = s.InsertOf<typeof app.shows>;
 export type ShowHostInsert = s.InsertOf<typeof app.showHosts>;
+export type TickerMessageInsert = s.InsertOf<typeof app.tickerMessages>;
 export type AudienceSubmissionInsert = s.InsertOf<typeof app.audienceSubmissions>;
 export type FeaturedSubmissionOverlayInsert = s.InsertOf<typeof app.featuredSubmissionOverlays>;
 export type SubmissionVoteInsert = s.InsertOf<typeof app.submissionVotes>;

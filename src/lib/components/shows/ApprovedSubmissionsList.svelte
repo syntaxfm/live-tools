@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { getDb } from 'jazz-tools/svelte';
-
 	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import { setAudienceSubmissionVote } from '$lib/components/shows/submission-actions';
 	import {
@@ -22,7 +20,6 @@
 
 	let { showId }: Props = $props();
 
-	const db = getDb();
 	const appUsers = createCurrentAppUserSubscription();
 	const submissions = createShowApprovedSubmissionsSubscription(() => showId);
 	const votes = createShowSubmissionVotesSubscription(() => showId);
@@ -54,12 +51,16 @@
 
 		pendingVoteSubmissionId = submission.id;
 		error = null;
+		console.log('Submitting vote', {
+			existingVote,
+			isUpvoted: !existingVote || existingVote.value <= 0,
+			showId,
+			submission
+		});
 
 		try {
 			await setAudienceSubmissionVote({
 				appUser,
-				db,
-				existingVote,
 				isUpvoted: !existingVote || existingVote.value <= 0,
 				showId,
 				submission
