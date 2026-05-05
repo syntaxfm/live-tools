@@ -3,7 +3,6 @@ export type OverlayFeature =
 	| 'ticker'
 	| 'featured-submission'
 	| 'submissions'
-	| 'feud-collect'
 	| 'feud-board';
 
 type OverlayFeaturePath = `/overlay/${OverlayFeature}`;

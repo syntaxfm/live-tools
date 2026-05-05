@@ -9,13 +9,29 @@
 
 	interface Props {
 		children: import('svelte').Snippet;
+		identityMode?: JazzIdentityMode;
 	}
 
-	let { children }: Props = $props();
+	type JazzIdentityMode = 'authenticated-or-local-first' | 'anonymous-readonly';
 
-	const client = initializeJazzClient();
+	let { children, identityMode = 'authenticated-or-local-first' }: Props = $props();
 
-	async function initializeJazzClient(): Promise<JazzClient> {
+	const client = initializeJazzClient(() => identityMode);
+
+	async function initializeJazzClient(getMode: () => JazzIdentityMode): Promise<JazzClient> {
+		const mode = getMode();
+
+		if (mode === 'anonymous-readonly') {
+			return createJazzClient(
+				createJazzConfig({
+					isDev: dev,
+					jwtToken: null,
+					localFirstSecret: null,
+					storageMode: 'memory'
+				})
+			);
+		}
+
 		const jwtToken = await getJwtFromBetterAuth();
 		const localFirstSecret = jwtToken || !dev ? null : getDevLocalFirstSecret();
 

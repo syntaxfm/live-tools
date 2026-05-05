@@ -22,6 +22,7 @@ interface SaveAudienceSubmissionOptions {
 	externalUserId: string;
 	isDevLocalFirst: boolean;
 	show: Show;
+	title: string | undefined;
 	url: string;
 }
 
@@ -60,6 +61,7 @@ export async function saveAudienceSubmission({
 	externalUserId,
 	isDevLocalFirst,
 	show,
+	title,
 	url
 }: SaveAudienceSubmissionOptions): Promise<void> {
 	if (!canEditAudienceSubmission(show)) {
@@ -76,6 +78,8 @@ export async function saveAudienceSubmission({
 		throw new TypeError('Submission URL required');
 	}
 
+	const trimmedTitle = title?.trim() || trimmedUrl;
+
 	const submissionAppUser = await getSubmissionAppUser({
 		appUser,
 		db,
@@ -85,7 +89,7 @@ export async function saveAudienceSubmission({
 
 	const fields: AudienceSubmissionFields = {
 		kind: DEFAULT_AUDIENCE_SUBMISSION_KIND,
-		title: trimmedUrl,
+		title: trimmedTitle,
 		url: trimmedUrl
 	};
 

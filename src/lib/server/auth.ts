@@ -10,7 +10,7 @@ import {
 	provisionAppUserForGithubAccount,
 	provisionAppUserForUserId
 } from '$lib/server/app-user-provisioning';
-import { authJazzContext } from '$lib/server/auth-jazz-context';
+import { authJazzDb } from '$lib/server/auth-jazz-context';
 import { isAdminGithubUser, resolveGithubUserIdForUser } from '$lib/server/github-auth';
 import {
 	getGithubUserIdFromProfile,
@@ -25,12 +25,14 @@ if (!env.ORIGIN) {
 	throw new Error('ORIGIN is required for Better Auth');
 }
 
+const authDb = await authJazzDb();
+
 export const auth = betterAuth({
 	baseURL: env.ORIGIN,
 	secret: env.BETTER_AUTH_SECRET,
 	trustedOrigins: [env.ORIGIN],
 	database: jazzAdapter({
-		db: () => authJazzContext().asBackend(app),
+		db: () => authDb,
 		schema: app.wasmSchema
 	}),
 	user: {

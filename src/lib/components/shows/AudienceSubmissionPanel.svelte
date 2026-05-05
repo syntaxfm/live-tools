@@ -4,6 +4,7 @@
 
 	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import { saveAudienceSubmission } from '$lib/components/shows/submission-actions';
+	import { fetchPageTitle } from '$lib/utils/page-title';
 	import { canEditAudienceSubmission, getLatestAudienceSubmission } from '$lib/utils/submissions';
 	import { app } from '$lib/schema';
 
@@ -74,6 +75,8 @@
 				throw new Error('Submission profile required');
 			}
 
+			const title = await fetchPageTitle(url);
+
 			await saveAudienceSubmission({
 				appUser,
 				db,
@@ -81,6 +84,7 @@
 				externalUserId: session.user_id,
 				isDevLocalFirst,
 				show,
+				title,
 				url
 			});
 

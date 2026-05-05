@@ -1,15 +1,19 @@
 import type { DbConfig } from 'jazz-tools';
 
+type JazzStorageMode = 'default' | 'memory';
+
 interface CreateJazzConfigOptions {
 	isDev: boolean;
 	jwtToken: string | null;
 	localFirstSecret: string | null;
+	storageMode?: JazzStorageMode;
 }
 
 export function createJazzConfig({
 	isDev,
 	jwtToken,
-	localFirstSecret
+	localFirstSecret,
+	storageMode = 'default'
 }: CreateJazzConfigOptions): DbConfig {
 	const appId = import.meta.env.PUBLIC_JAZZ_APP_ID;
 	const serverUrl = import.meta.env.PUBLIC_JAZZ_SERVER_URL;
@@ -29,9 +33,12 @@ export function createJazzConfig({
 		serverUrl
 	};
 
+	if (storageMode === 'memory' || jwtToken) {
+		config.driver = { type: 'memory' };
+	}
+
 	if (jwtToken) {
 		config.jwtToken = jwtToken;
-		config.driver = { type: 'memory' };
 	} else if (localFirstSecret) {
 		config.secret = localFirstSecret;
 	}

@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
 
 import { app } from '$lib/schema';
-import { authJazzContext } from '$lib/server/auth-jazz-context';
+import { authJazzDb } from '$lib/server/auth-jazz-context';
 import {
 	normalizeGithubUsername,
 	parseGithubUserIdList,
@@ -35,7 +35,7 @@ export function isAdminGithubUser({
 }
 
 export async function resolveGithubUserIdForUser(userId: string): Promise<string | undefined> {
-	const db = authJazzContext().asBackend(app);
+	const db = await authJazzDb();
 	const githubAccount = await db.one(
 		app.better_auth_account.where({ userId, providerId: 'github' }),
 		{ tier: 'global' }
