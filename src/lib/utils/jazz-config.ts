@@ -20,8 +20,10 @@ export function createJazzConfig({
 }: CreateJazzConfigOptions): DbConfig {
 	console.log(env);
 	const appId = env.PUBLIC_JAZZ_APP_ID;
+	console.log('appId', appId);
 
 	const serverUrl = import.meta.env.PUBLIC_JAZZ_SERVER_URL;
+	console.log('serverUrl', serverUrl);
 
 	if (!appId) {
 		throw new Error('PUBLIC_JAZZ_APP_ID is required for Jazz');
