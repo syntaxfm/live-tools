@@ -1,4 +1,4 @@
-import { PUBLIC_JAZZ_APP_ID } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { createJazzContext } from 'jazz-tools/backend';
 import type { JazzContext } from 'jazz-tools/backend';
 
@@ -9,7 +9,7 @@ if (!process.env.BACKEND_SECRET) {
 let context: JazzContext | null = null;
 
 function createAuthJazzContext(): JazzContext {
-	const appId = PUBLIC_JAZZ_APP_ID;
+	const appId = env.PUBLIC_JAZZ_APP_ID;
 	const serverUrl = process.env.SYNC_SERVER_URL || process.env.PUBLIC_JAZZ_SERVER_URL;
 
 	if (!appId) {
