@@ -10,14 +10,17 @@ interface CreateJazzConfigOptions {
 	storageMode?: JazzStorageMode;
 }
 
+console.log(env);
+
 export function createJazzConfig({
 	isDev,
 	jwtToken,
 	localFirstSecret,
 	storageMode = 'default'
 }: CreateJazzConfigOptions): DbConfig {
+	console.log(env);
 	const appId = env.PUBLIC_JAZZ_APP_ID;
-	console.log(appId);
+
 	const serverUrl = import.meta.env.PUBLIC_JAZZ_SERVER_URL;
 
 	if (!appId) {

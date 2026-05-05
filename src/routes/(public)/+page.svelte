@@ -8,6 +8,8 @@
 	const currentShow = $derived(getCurrentShow(shows.current ?? []));
 </script>
 
+hii
+
 {#if currentShow}
 	<AudienceShow showId={currentShow.id} />
 {/if}
