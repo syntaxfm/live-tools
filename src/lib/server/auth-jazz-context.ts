@@ -10,7 +10,7 @@ let context: JazzContext | null = null;
 
 function createAuthJazzContext(): JazzContext {
 	const appId = env.PUBLIC_JAZZ_APP_ID;
-	const serverUrl = process.env.SYNC_SERVER_URL || process.env.PUBLIC_JAZZ_SERVER_URL;
+	const serverUrl = env.PUBLIC_JAZZ_SERVER_URL;
 
 	if (!appId) {
 		throw new Error('APP_ID or PUBLIC_JAZZ_APP_ID is required for Jazz auth');
