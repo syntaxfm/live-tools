@@ -36,11 +36,6 @@ export const OVERLAY_FEATURES: readonly OverlayFeatureInfo[] = [
 		path: '/submissions'
 	},
 	{
-		feature: 'feud-collect',
-		label: 'Feud collect',
-		path: '/overlay/feud-collect'
-	},
-	{
 		feature: 'feud-board',
 		label: 'Feud board',
 		path: '/overlay/feud-board'

@@ -47,7 +47,6 @@ A **show** is one stream episode with its own ID, accessible at any time.
 - `/overlay/ticker` — OBS ticker overlay for the current show
 - `/overlay/featured-submission` — OBS featured audience submission overlay for the current show
 - `/overlay/tool-vote` — OBS tool vote/result overlay for the current show
-- `/overlay/feud-collect` — OBS Feud collection prompt overlay for the current show
 - `/overlay/feud-board` — OBS Feud board overlay for the current show
 
 ### Current show resolution
