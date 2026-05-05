@@ -35,7 +35,8 @@
 		"svelte-check": "^4.4.7",
 		"typescript": "^6.0.2",
 		"typescript-eslint": "^8.58.1",
-		"vite": "^8.0.7"
+		"vite": "^8.0.7",
+		"wrangler": "^4.87.0"
 	},
 	"dependencies": {
 		"@sveltejs/adapter-cloudflare": "^7.2.8",
