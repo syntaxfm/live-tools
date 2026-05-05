@@ -6,7 +6,7 @@ export type OverlayFeature =
 	| 'feud-collect'
 	| 'feud-board';
 
-type OverlayFeaturePath = '/submissions' | `/overlay/${Exclude<OverlayFeature, 'submissions'>}`;
+type OverlayFeaturePath = `/overlay/${OverlayFeature}`;
 
 interface OverlayFeatureInfo {
 	feature: OverlayFeature;
@@ -33,7 +33,7 @@ export const OVERLAY_FEATURES: readonly OverlayFeatureInfo[] = [
 	{
 		feature: 'submissions',
 		label: 'Submissions',
-		path: '/submissions'
+		path: '/overlay/submissions'
 	},
 	{
 		feature: 'feud-board',
