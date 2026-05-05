@@ -1,4 +1,4 @@
-import { env } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import type { DbConfig } from 'jazz-tools';
 
 type JazzStorageMode = 'default' | 'memory';
