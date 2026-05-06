@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getSession } from 'jazz-tools/svelte';
 
 	import { authClient } from '$lib/auth-client';
-	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
-	const appUsers = createCurrentAppUserSubscription();
-	const appUser = $derived(appUsers.current?.[0] ?? null);
-	const roleLabel = $derived(jazzContext.session?.claims.isAdmin === true ? 'admin' : 'viewer');
+	const session = getSession();
+
+	const user = $derived(session?.claims ?? null);
+	const roleLabel = $derived(user?.isAdmin === true ? 'admin' : 'viewer');
 
 	let signOutError = $state<string | null>(null);
 	let isSigningOut = $state(false);
@@ -45,12 +44,10 @@
 	<p class="section-label">Settings</p>
 	<h1>Account</h1>
 
-	{#if appUser}
-		<p>{appUser.displayName}</p>
-		<p>{jazzContext.session?.claims.githubUsername ?? appUser.githubUsername}</p>
+	{#if user}
+		<p>{user.displayName}</p>
+		<p>{session?.claims.githubUsername ?? user.githubUsername}</p>
 		<p><span class="badge">{roleLabel}</span></p>
-	{:else if appUsers.loading}
-		<p class="status" data-state="connecting">Loading account</p>
 	{/if}
 
 	<button disabled={isSigningOut} data-variant="danger" onclick={handleSignOut}>Sign out</button>

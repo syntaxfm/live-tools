@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getSession } from 'jazz-tools/svelte';
 	import { onDestroy } from 'svelte';
 
 	import {
@@ -21,7 +21,8 @@
 	let { showId }: Props = $props();
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
+	const session = getSession();
+
 	const unsubscribeMutationError = db.onMutationError((event) => {
 		console.error('[jazz:mutation-error]', event);
 	});
@@ -29,7 +30,7 @@
 	const hosts = createShowHostsSubscription(() => showId);
 	const show = $derived(shows.current?.[0] ?? null);
 	const sortedHosts = $derived([...(hosts.current ?? [])].sort(compareShowHostsByPosition));
-	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
+	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
 
 	let error = $state<string | null>(null);

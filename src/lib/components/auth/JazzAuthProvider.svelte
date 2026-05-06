@@ -1,48 +1,30 @@
 <script lang="ts">
+	import { env } from '$env/dynamic/public';
 	import { dev } from '$app/environment';
 	import { JazzSvelteProvider, createJazzClient } from 'jazz-tools/svelte';
-	import type { JazzClient } from 'jazz-tools/svelte';
-
 	import { getJwtFromBetterAuth } from '$lib/auth-client';
-	import { getDevLocalFirstSecret } from '$lib/utils/dev-local-first';
-	import { createJazzConfig } from '$lib/utils/jazz-config';
+
+	import { page } from '$app/state';
 
 	interface Props {
 		children: import('svelte').Snippet;
 		identityMode?: JazzIdentityMode;
 	}
 
-	type JazzIdentityMode = 'authenticated-or-local-first' | 'anonymous-readonly';
+	type JazzIdentityMode = 'auth' | 'anon';
 
-	let { children, identityMode = 'authenticated-or-local-first' }: Props = $props();
+	let { children }: Props = $props();
 
-	const client = initializeJazzClient(() => identityMode);
+	const mode = $derived(page.url.pathname.startsWith('/overlay') ? 'anon' : 'auth');
 
-	async function initializeJazzClient(getMode: () => JazzIdentityMode): Promise<JazzClient> {
-		const mode = getMode();
-
-		if (mode === 'anonymous-readonly') {
-			return createJazzClient(
-				createJazzConfig({
-					isDev: dev,
-					jwtToken: null,
-					localFirstSecret: null,
-					storageMode: 'memory'
-				})
-			);
-		}
-
-		const jwtToken = await getJwtFromBetterAuth();
-		const localFirstSecret = jwtToken || !dev ? null : getDevLocalFirstSecret();
-
-		return createJazzClient(
-			createJazzConfig({
-				isDev: dev,
-				jwtToken,
-				localFirstSecret
-			})
-		);
-	}
+	const jwt = await getJwtFromBetterAuth();
+	const client = createJazzClient({
+		env: dev ? 'dev' : 'prod',
+		appId: env.PUBLIC_JAZZ_APP_ID,
+		jwtToken: jwt ? jwt : undefined,
+		driver: mode === 'auth' ? { type: 'memory' } : undefined,
+		serverUrl: env.PUBLIC_JAZZ_SERVER_URL || 'https://localhost:7012/'
+	});
 </script>
 
 <JazzSvelteProvider {client}>

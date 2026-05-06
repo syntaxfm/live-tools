@@ -5,6 +5,8 @@ import { jazzAdapter } from 'jazz-tools/better-auth-adapter';
 import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 
+console.log('env', { clientId: env.GITHUB_CLIENT_ID, clientSecret: env.GITHUB_CLIENT_SECRET });
+
 import { app } from '$lib/schema';
 import {
 	provisionAppUserForGithubAccount,
@@ -91,6 +93,7 @@ export const auth = betterAuth({
 
 					return {
 						claims: {
+							id: user.id,
 							name: user.name,
 							email: user.email,
 							image: user.image ?? null,

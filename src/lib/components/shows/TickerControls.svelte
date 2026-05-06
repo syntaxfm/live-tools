@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getSession } from 'jazz-tools/svelte';
 
-	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import {
 		createTickerMessagesSubscription,
 		createShowSubscription
@@ -16,12 +15,12 @@
 	let { showId }: Props = $props();
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
-	const appUsers = createCurrentAppUserSubscription();
+	const session = getSession();
+
 	const shows = createShowSubscription(() => showId);
 	const messages = createTickerMessagesSubscription(() => showId);
-	const appUser = $derived(appUsers.current?.[0] ?? null);
-	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
+
+	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const sortedMessages = $derived(
 		[...(messages.current ?? [])].sort(compareTickerMessagesByPosition)
 	);
@@ -41,7 +40,7 @@
 	async function handleAddMessage(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!appUser || !showId) {
+		if (!session?.user_id || !showId) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -51,7 +50,7 @@
 
 		try {
 			await addTickerMessage({
-				createdById: appUser.id,
+				createdById: session.user_id,
 				db,
 				isAdmin,
 				messages: sortedMessages,
@@ -109,15 +108,7 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">Ticker</p>
 
-	{#if shows.loading || messages.loading || appUsers.loading}
-		<p class="status" data-state="connecting">Loading</p>
-	{:else if shows.error}
-		<p class="status" data-state="warning">{shows.error.message}</p>
-	{:else if messages.error}
-		<p class="status" data-state="warning">{messages.error.message}</p>
-	{:else if appUsers.error}
-		<p class="status" data-state="warning">{appUsers.error.message}</p>
-	{:else}
+	{#if shows.loading || messages.loading}{:else}
 		<form class="ticker-message-form" autocomplete="off" onsubmit={handleAddMessage}>
 			<label class="field">
 				Message

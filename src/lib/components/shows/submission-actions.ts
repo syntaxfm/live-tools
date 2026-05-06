@@ -6,7 +6,6 @@ import type { AppUser, AudienceSubmission, AudienceSubmissionInsert, Show } from
 import { canEditAudienceSubmission } from '$lib/utils/submissions';
 import type { AudienceSubmissionKind, AudienceSubmissionStatus } from '$lib/utils/submissions';
 
-const DEV_LOCAL_FIRST_DISPLAY_NAME = 'Local anonymous';
 const DEFAULT_AUDIENCE_SUBMISSION_KIND: AudienceSubmissionKind = 'tool';
 
 interface AudienceSubmissionFields {
@@ -16,11 +15,9 @@ interface AudienceSubmissionFields {
 }
 
 interface SaveAudienceSubmissionOptions {
-	appUser: AppUser | null;
 	db: Db;
 	existingSubmission: AudienceSubmission | null;
 	externalUserId: string;
-	isDevLocalFirst: boolean;
 	show: Show;
 	title: string | undefined;
 	url: string;
@@ -55,11 +52,9 @@ interface ClearFeaturedSubmissionOptions {
 }
 
 export async function saveAudienceSubmission({
-	appUser,
-	db,
 	existingSubmission,
+	db,
 	externalUserId,
-	isDevLocalFirst,
 	show,
 	title,
 	url
@@ -80,13 +75,6 @@ export async function saveAudienceSubmission({
 
 	const trimmedTitle = title?.trim() || trimmedUrl;
 
-	const submissionAppUser = await getSubmissionAppUser({
-		appUser,
-		db,
-		externalUserId,
-		isDevLocalFirst
-	});
-
 	const fields: AudienceSubmissionFields = {
 		kind: DEFAULT_AUDIENCE_SUBMISSION_KIND,
 		title: trimmedTitle,
@@ -95,7 +83,7 @@ export async function saveAudienceSubmission({
 
 	const insert: AudienceSubmissionInsert = {
 		...fields,
-		authorId: submissionAppUser.id,
+		authorId: externalUserId,
 		createdAt: new Date(),
 		isFeatured: false,
 		showId: show.id,
@@ -103,46 +91,6 @@ export async function saveAudienceSubmission({
 	};
 
 	await db.insert(app.audienceSubmissions, insert).wait({ tier: 'global' });
-}
-
-async function getSubmissionAppUser({
-	appUser,
-	db,
-	externalUserId,
-	isDevLocalFirst
-}: {
-	appUser: AppUser | null;
-	db: Db;
-	externalUserId: string;
-	isDevLocalFirst: boolean;
-}): Promise<AppUser> {
-	if (appUser) {
-		return appUser;
-	}
-
-	if (!isDevLocalFirst) {
-		throw new Error('App user profile required');
-	}
-
-	const existingAppUser = await db.one(app.appUsers.where({ id: externalUserId }), {
-		tier: 'global'
-	});
-
-	if (existingAppUser) {
-		return existingAppUser;
-	}
-
-	return db
-		.insert(
-			app.appUsers,
-			{
-				displayName: DEV_LOCAL_FIRST_DISPLAY_NAME,
-				externalUserId,
-				isBanned: false
-			},
-			{ id: externalUserId }
-		)
-		.wait({ tier: 'global' });
 }
 
 export async function moderateAudienceSubmission({

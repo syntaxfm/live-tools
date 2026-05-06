@@ -1,12 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getDb, getJazzContext, QuerySubscription } from 'jazz-tools/svelte';
+	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
 
-	import {
-		createAppUsersSubscription,
-		createCurrentAppUserSubscription
-	} from '$lib/components/auth/current-app-user.svelte';
 	import { createShow, deleteShow } from '$lib/components/shows/show-actions';
 	import {
 		compareShowsByRecency,
@@ -19,18 +15,20 @@
 	import { app } from '$lib/schema';
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
-	const appUsers = createCurrentAppUserSubscription();
-	const allAppUsers = createAppUsersSubscription();
+	const session = getSession();
+
+	// TOD Should this be just admins?
+	const allAppUsers = new QuerySubscription(app.appUsers.where({}), { tier: 'global' });
 	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
-	const appUser = $derived(appUsers.current?.[0] ?? null);
+
 	const sortedShows = $derived([...(shows.current ?? [])].sort(compareShowsByRecency));
 	const hostOptions = $derived(
 		[...(allAppUsers.current ?? [])].sort((first, second) =>
 			first.displayName.localeCompare(second.displayName)
 		)
 	);
-	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
+	const user = $derived(session?.claims);
+	const isAdmin = $derived(user?.isAdmin);
 	const defaultShowDate = formatShowDateInput(new Date());
 
 	let deleteError = $state<string | null>(null);
@@ -41,7 +39,7 @@
 	async function handleCreateShow(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!appUser || !isAdmin) {
+		if (!user || !isAdmin) {
 			formError = 'Admin access required';
 			return;
 		}
@@ -88,7 +86,7 @@
 
 		try {
 			const show = await createShow({
-				createdById: appUser.id,
+				createdById: user.id,
 				db,
 				hosts: hostIds.flatMap((hostId) => {
 					const host = hostOptions.find((option) => option.id === hostId);
@@ -158,9 +156,7 @@
 	<p class="section-label">Admin</p>
 	<h1>Manage shows</h1>
 
-	{#if appUsers.loading}
-		<p class="status" data-state="connecting">Loading profile</p>
-	{:else if appUser && isAdmin}
+	{#if user && isAdmin}
 		<form onsubmit={handleCreateShow}>
 			<div class="form-row">
 				<label class="field">
@@ -205,7 +201,7 @@
 	{/if}
 </section>
 
-{#if appUser && isAdmin}
+{#if user && isAdmin}
 	<section class="surface" data-depth="medium">
 		<p class="section-label">Shows</p>
 

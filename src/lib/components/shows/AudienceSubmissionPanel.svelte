@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { dev } from '$app/environment';
-	import { getDb, getJazzContext, QuerySubscription } from 'jazz-tools/svelte';
+	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
 
-	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import { saveAudienceSubmission } from '$lib/components/shows/submission-actions';
 	import { fetchPageTitle } from '$lib/utils/page-title';
 	import { canEditAudienceSubmission, getLatestAudienceSubmission } from '$lib/utils/submissions';
@@ -15,16 +14,16 @@
 	let { showId }: Props = $props();
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
-	const appUsers = createCurrentAppUserSubscription();
+	const session = getSession();
+
 	const shows = new QuerySubscription(
 		() => (showId ? app.shows.where({ id: showId }) : undefined),
 		{ tier: 'global' }
 	);
-	const appUser = $derived(appUsers.current?.[0] ?? null);
 
 	const ownSubmissions = new QuerySubscription(
-		() => (showId ? app.audienceSubmissions.where({ showId, authorId: appUser?.id }) : undefined),
+		() =>
+			showId ? app.audienceSubmissions.where({ showId, authorId: session?.user_id }) : undefined,
 		{ tier: 'global' }
 	);
 
@@ -35,10 +34,9 @@
 	const show = $derived(shows.current?.[0] ?? null);
 	const ownSubmission = $derived(getLatestAudienceSubmission(ownSubmissions.current ?? []));
 	const canEdit = $derived(canEditAudienceSubmission(show));
-	const session = $derived(jazzContext.session);
 	const isDevLocalFirst = $derived(dev && session?.authMode === 'local-first');
 	const hasSubmitted = $derived(Boolean(ownSubmission) || status === 'submitted');
-	const canSubmit = $derived(canEdit && (Boolean(appUser) || isDevLocalFirst));
+	const canSubmit = $derived(canEdit && (Boolean(session?.user_id) || isDevLocalFirst));
 
 	async function handleSubmit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
@@ -78,13 +76,11 @@
 			const title = await fetchPageTitle(url);
 
 			await saveAudienceSubmission({
-				appUser,
-				db,
 				existingSubmission: ownSubmission,
 				externalUserId: session.user_id,
-				isDevLocalFirst,
 				show,
 				title,
+				db,
 				url
 			});
 

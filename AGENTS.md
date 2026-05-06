@@ -26,6 +26,8 @@
 
 - Use `QuerySubscription` from `jazz-tools/svelte` for live Svelte reads.
 - Query through the typed Jazz app from `src/lib/schema.ts`, for example `app.shows.where({})`.
+- To get current user use `	const session = getSession(); const user = $derived(session?.claims ?? null);`
+- Don't check loading and don't have loading states, just check for if data existence.
 - Use `undefined` to skip conditional queries until required ids or session data exist.
 - Handle the initial `subscription.current` loading value intentionally. Prefer `subscription.current ?? []` for list UI unless a real loading state matters.
 - Keep query construction in colocated `*.svelte.ts` helpers when it is shared by multiple components.

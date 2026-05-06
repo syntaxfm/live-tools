@@ -4,7 +4,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
-	const appOrigin = env.APP_ORIGIN || env.ORIGIN || 'http://localhost:7011';
+	const appOrigin = env.ORIGIN || 'http://localhost:7011';
 
 	if (mode === 'development') {
 		process.env.POLE_ENABLE_DEV_LOCAL_FIRST_SUBMISSIONS = 'true';
@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
 			jazzSvelteKit({
 				schemaDir: 'src/lib',
 				server: {
+					port: 7012,
 					jwksUrl: `${appOrigin}/api/auth/jwks`
 				}
 			}),

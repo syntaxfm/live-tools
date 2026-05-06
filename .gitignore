@@ -26,3 +26,6 @@ vite.config.ts.timestamp-*
 
 # Jazz local persistence
 .jazz
+
+# Sentry Config File
+.env.sentry-build-plugin

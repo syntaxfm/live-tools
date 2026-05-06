@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
 	import { setAudienceSubmissionVote } from '$lib/components/shows/submission-actions';
 	import {
 		createOwnShowSubmissionVotesSubscription,
@@ -13,6 +12,7 @@
 		getSubmissionVoteCounts,
 		getSubmissionVotesBySubmissionId
 	} from '$lib/utils/submissions';
+	import { getSession } from 'jazz-tools/svelte';
 
 	interface Props {
 		showId: string | undefined;
@@ -20,13 +20,12 @@
 
 	let { showId }: Props = $props();
 
-	const appUsers = createCurrentAppUserSubscription();
+	const session = getSession();
 	const submissions = createShowApprovedSubmissionsSubscription(() => showId);
 	const votes = createShowSubmissionVotesSubscription(() => showId);
-	const appUser = $derived(appUsers.current?.[0] ?? null);
 	const ownVotes = createOwnShowSubmissionVotesSubscription(
 		() => showId,
-		() => appUser?.id
+		() => session?.user_id
 	);
 	const approvedSubmissions = $derived(
 		[...(submissions.current ?? [])].sort(compareAudienceSubmissionsByNewest)
@@ -40,8 +39,8 @@
 	async function handleVote(submission: AudienceSubmission): Promise<void> {
 		if (
 			!showId ||
-			!appUser ||
-			submission.authorId === appUser.id ||
+			!session?.user_id ||
+			submission.authorId === session.user_id ||
 			pendingVoteSubmissionId === submission.id
 		) {
 			return;
@@ -51,16 +50,10 @@
 
 		pendingVoteSubmissionId = submission.id;
 		error = null;
-		console.log('Submitting vote', {
-			existingVote,
-			isUpvoted: !existingVote || existingVote.value <= 0,
-			showId,
-			submission
-		});
 
 		try {
 			await setAudienceSubmissionVote({
-				appUser,
+				appUser: session?.user_id,
 				isUpvoted: !existingVote || existingVote.value <= 0,
 				showId,
 				submission
@@ -85,7 +78,7 @@
 				{@const voteCount = voteCounts.get(submission.id) ?? 0}
 				{@const ownVote = ownVotesBySubmissionId.get(submission.id)}
 				{@const isUpvoted = Boolean(ownVote && ownVote.value > 0)}
-				{@const canVote = Boolean(appUser && submission.authorId !== appUser.id)}
+				{@const canVote = Boolean(session?.user_id && submission.authorId !== session.user_id)}
 				<li>
 					<span class="badge" aria-label={`${voteCount} votes`}>{voteCount}</span>
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->

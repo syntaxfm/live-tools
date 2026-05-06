@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { getDb, getJazzContext, QuerySubscription } from 'jazz-tools/svelte';
-
-	import { createCurrentAppUserSubscription } from '$lib/components/auth/current-app-user.svelte';
+	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
 	import {
 		clearFeaturedSubmission,
 		featureAudienceSubmission,
@@ -22,14 +20,12 @@
 	let { showId }: Props = $props();
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
-	const appUsers = createCurrentAppUserSubscription();
 	const submissions = new QuerySubscription(
 		() => (showId ? app.audienceSubmissions.where({ showId }) : undefined),
 		{ tier: 'global' }
 	);
-	const appUser = $derived(appUsers.current?.[0] ?? null);
-	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
+	const session = getSession();
+	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const sortedSubmissions = $derived(
 		[...(submissions.current ?? [])].sort(compareAudienceSubmissionsByNewest)
 	);
@@ -44,7 +40,7 @@
 		submissionId: string,
 		status: AudienceSubmissionStatus
 	): Promise<void> {
-		if (!appUser || !showId) {
+		if (!session || !showId) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -54,7 +50,7 @@
 
 		try {
 			await moderateAudienceSubmission({
-				appUserId: appUser.id,
+				appUserId: session.user_id,
 				db,
 				isAdmin,
 				status,
@@ -69,7 +65,7 @@
 	}
 
 	async function handleFeature(submissionId: string): Promise<void> {
-		if (!appUser || !showId) {
+		if (!session || !showId) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -100,7 +96,7 @@
 	}
 
 	async function handleClearFeatured(): Promise<void> {
-		if (!appUser || !showId) {
+		if (!session || !showId) {
 			error = 'Admin profile required';
 			return;
 		}
