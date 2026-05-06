@@ -35,11 +35,18 @@ export function isAdminGithubUser({
 }
 
 export async function resolveGithubUserIdForUser(userId: string): Promise<string | undefined> {
+	const startedAt = performance.now();
+	console.info('[auth:github-user] resolve github account start', { userId });
 	const db = authJazzContext().asBackend(app);
 	const githubAccount = await db.one(
 		app.better_auth_account.where({ userId, providerId: 'github' }),
 		{ tier: 'global' }
 	);
+	console.info('[auth:github-user] resolve github account complete', {
+		userId,
+		hasGithubAccount: Boolean(githubAccount),
+		elapsedMs: Math.round(performance.now() - startedAt)
+	});
 
 	return githubAccount?.accountId;
 }

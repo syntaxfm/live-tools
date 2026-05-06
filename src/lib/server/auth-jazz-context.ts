@@ -11,15 +11,23 @@ let context: JazzContext | null = null;
 
 function createAuthJazzContext(): JazzContext {
 	const appId = env.PUBLIC_JAZZ_APP_ID;
+	const serverUrl = env.PUBLIC_JAZZ_SERVER_URL || 'http://localhost:7012/';
 
 	if (!appId) {
 		throw new Error('APP_ID or PUBLIC_JAZZ_APP_ID is required for Jazz auth');
 	}
 
+	console.info('[auth:jazz-context] create', {
+		appId,
+		serverUrl,
+		env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
+		hasBackendSecret: Boolean(serverEnv.BACKEND_SECRET)
+	});
+
 	return createJazzContext({
 		appId,
 		driver: { type: 'memory' },
-		serverUrl: env.PUBLIC_JAZZ_SERVER_URL || 'https://localhost:7012/',
+		serverUrl,
 		env: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
 		userBranch: 'main',
 		backendSecret: serverEnv.BACKEND_SECRET,

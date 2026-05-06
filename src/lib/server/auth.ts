@@ -5,8 +5,6 @@ import { jazzAdapter } from 'jazz-tools/better-auth-adapter';
 import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 
-console.log('env', { clientId: env.GITHUB_CLIENT_ID, clientSecret: env.GITHUB_CLIENT_SECRET });
-
 import { app } from '$lib/schema';
 import {
 	provisionAppUserForGithubAccount,
@@ -56,14 +54,34 @@ export const auth = betterAuth({
 		account: {
 			create: {
 				after: async (account) => {
+					const startedAt = performance.now();
+					console.info('[auth:hook:account.create] start', {
+						providerId: account.providerId,
+						userId: account.userId
+					});
 					await provisionAppUserForGithubAccount(account);
+					console.info('[auth:hook:account.create] complete', {
+						providerId: account.providerId,
+						userId: account.userId,
+						elapsedMs: Math.round(performance.now() - startedAt)
+					});
 				}
 			}
 		},
 		session: {
 			create: {
 				after: async (session) => {
+					const startedAt = performance.now();
+					console.info('[auth:hook:session.create] start', {
+						userId: session.userId,
+						sessionId: session.id
+					});
 					await provisionAppUserForUserId(session.userId);
+					console.info('[auth:hook:session.create] complete', {
+						userId: session.userId,
+						sessionId: session.id,
+						elapsedMs: Math.round(performance.now() - startedAt)
+					});
 				}
 			}
 		}
@@ -88,8 +106,19 @@ export const auth = betterAuth({
 			jwt: {
 				issuer: env.ORIGIN,
 				definePayload: async ({ user }) => {
+					const startedAt = performance.now();
+					console.info('[auth:jwt] define payload start', {
+						userId: user.id,
+						hasGithubUserId: Boolean(user.githubUserId),
+						hasGithubUsername: Boolean(user.githubUsername)
+					});
 					const githubUserId =
 						user.githubUserId ?? (await resolveGithubUserIdForUser(user.id)) ?? undefined;
+					console.info('[auth:jwt] define payload complete', {
+						userId: user.id,
+						hasGithubUserId: Boolean(githubUserId),
+						elapsedMs: Math.round(performance.now() - startedAt)
+					});
 
 					return {
 						claims: {

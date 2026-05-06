@@ -7,7 +7,6 @@
 
 	const db = getDb();
 	const session = getSession();
-
 	const user = $derived(session?.claims ?? null);
 	const roleLabel = $derived(user?.isAdmin === true ? 'admin' : 'viewer');
 

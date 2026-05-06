@@ -10,22 +10,40 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	if (!building && isAuthPath(event.url.toString(), auth.options)) {
 		const startedAt = performance.now();
 		const pathname = event.url.pathname;
+		const requestId = crypto.randomUUID();
+		const hasOauthCode = event.url.searchParams.has('code');
+		const hasOauthState = event.url.searchParams.has('state');
 		const pendingLog = setTimeout(() => {
-			console.info(`[auth] ${event.request.method} ${pathname} still pending after 3000ms`);
+			console.info(
+				`[auth:${requestId}] ${event.request.method} ${pathname} still pending after ${Math.round(
+					performance.now() - startedAt
+				)}ms`,
+				{ hasOauthCode, hasOauthState }
+			);
 		}, 3000);
 
-		console.info(`[auth] ${event.request.method} ${pathname} start`);
+		console.info(`[auth:${requestId}] ${event.request.method} ${pathname} start`, {
+			hasOauthCode,
+			hasOauthState
+		});
 
 		try {
 			const response = await auth.handler(event.request);
+			const location = response.headers.get('location');
+			const redirectUrl = location ? new URL(location, event.url.origin) : null;
 			console.info(
-				`[auth] ${event.request.method} ${pathname} ${response.status} ${Math.round(
+				`[auth:${requestId}] ${event.request.method} ${pathname} ${response.status} ${Math.round(
 					performance.now() - startedAt
-				)}ms`
+				)}ms`,
+				{
+					redirectHost: redirectUrl?.host ?? null,
+					redirectPath: redirectUrl?.pathname ?? null,
+					redirectSearchKeys: redirectUrl ? [...redirectUrl.searchParams.keys()] : []
+				}
 			);
 			return response;
 		} catch (error) {
-			console.error(`[auth] ${event.request.method} ${pathname} failed`, error);
+			console.error(`[auth:${requestId}] ${event.request.method} ${pathname} failed`, error);
 			throw error;
 		} finally {
 			clearTimeout(pendingLog);
@@ -37,6 +55,10 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	if (session) {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
+		console.info('[auth] existing session resolved', {
+			userId: session.user.id,
+			sessionId: session.session.id
+		});
 		provisionAppUserForUserId(session.user.id).catch((error: unknown) => {
 			console.error('Unable to provision app user', error);
 		});
