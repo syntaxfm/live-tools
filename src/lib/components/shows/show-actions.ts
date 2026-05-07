@@ -163,65 +163,6 @@ export async function broadcastLowerThird({
 		.wait({ tier: 'global' });
 }
 
-export async function updateShowHosts({
-	activeLowerThirdShowHostId,
-	currentHosts,
-	hosts,
-	isAdmin,
-	showId,
-	db
-}: UpdateShowHostsOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	if (currentHosts.some((host) => host.showId !== showId)) {
-		throw new Error('Host does not belong to show');
-	}
-
-	const nextHostIds = new Set(hosts.map((host) => host.id));
-	const currentHostsByHostId = new Map(currentHosts.map((host) => [host.hostId, host]));
-	const removedHosts = currentHosts.filter((host) => !nextHostIds.has(host.hostId));
-
-	if (
-		activeLowerThirdShowHostId &&
-		removedHosts.some((host) => host.id === activeLowerThirdShowHostId)
-	) {
-		await db
-			.update(app.shows, showId, {
-				activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
-			})
-			.wait({ tier: 'global' });
-	}
-
-	await Promise.all(
-		hosts.map((host, position) => {
-			const currentHost = currentHostsByHostId.get(host.id);
-
-			if (currentHost) {
-				return db
-					.update(app.showHosts, currentHost.id, {
-						displayName: host.displayName,
-						avatarUrl: host.avatarUrl ?? null,
-						position
-					})
-					.wait({ tier: 'global' });
-			}
-
-			return db
-				.insert(app.showHosts, {
-					showId,
-					hostId: host.id,
-					displayName: host.displayName,
-					avatarUrl: host.avatarUrl ?? null,
-					position
-				})
-				.wait({ tier: 'global' });
-		})
-	);
-
-	await Promise.all(
-		removedHosts.map((host) => db.delete(app.showHosts, host.id).wait({ tier: 'global' }))
-	);
-}
 export async function clearLowerThird({
 	db,
 	isAdmin,
