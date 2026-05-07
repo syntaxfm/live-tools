@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
 	import { assertAdmin } from '$lib/components/shows/show-actions';
-
 	import { app, type Show, type ShowHost } from '$lib/schema';
 
 	let {

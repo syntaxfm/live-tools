@@ -1,10 +1,6 @@
 <script lang="ts">
 	import { getDb, getSession } from 'jazz-tools/svelte';
-	import {
-		assertAdmin,
-		updateAudienceSubmissionGate,
-		updateShowStatus
-	} from '$lib/components/shows/show-actions';
+	import { assertAdmin, updateAudienceSubmissionGate } from '$lib/components/shows/show-actions';
 	import { formatShowDate, parseShowStatus, SHOW_STATUSES } from '$lib/utils/shows';
 	import { app, type Show } from '$lib/schema';
 

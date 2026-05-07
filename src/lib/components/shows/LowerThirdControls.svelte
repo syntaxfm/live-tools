@@ -2,28 +2,25 @@
 	import { getDb, getSession } from 'jazz-tools/svelte';
 	import { onDestroy } from 'svelte';
 
-	import { createShowHostsSubscription } from '$lib/components/shows/show-queries.svelte';
 	import {
 		broadcastLowerThird,
 		clearLowerThird,
 		updateShowHostLowerThirdTitle
 	} from '$lib/components/shows/show-actions';
 	import { getLowerThirdTitle, LOWER_THIRD_DISPLAY_MS } from '$lib/utils/lower-thirds';
-	import { compareShowHostsByPosition } from '$lib/utils/shows';
-	import type { Show } from '$lib/schema';
+	import type { Show, ShowHost } from '$lib/schema';
 
 	let {
 		show
 	}: {
-		show: Show;
+		show: Show & {
+			showHostsViaShow: ShowHost[];
+		};
 	} = $props();
 
 	const db = getDb();
 	const session = getSession();
-
-	const hosts = createShowHostsSubscription(() => show.id);
-
-	const sortedHosts = $derived([...(hosts.current ?? [])].sort(compareShowHostsByPosition));
+	const hosts = $derived(show.showHostsViaShow);
 	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
 
@@ -44,7 +41,7 @@
 			return;
 		}
 
-		const host = sortedHosts.find((candidate) => candidate.id === input.dataset.hostId);
+		const host = hosts.find((candidate) => candidate.id === input.dataset.hostId);
 
 		if (!show.id || !host) {
 			error = 'Host not found';
@@ -78,7 +75,7 @@
 			return;
 		}
 
-		const host = sortedHosts.find((candidate) => candidate.id === button.dataset.hostId);
+		const host = hosts.find((candidate) => candidate.id === button.dataset.hostId);
 
 		if (!show.id || !host) {
 			error = 'Unable to broadcast';
@@ -157,11 +154,9 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">Lower thirds</p>
 
-	{#if hosts.error}
-		<h2>{hosts.error.message}</h2>
-	{:else if sortedHosts.length}
+	{#if hosts.length}
 		<ul class="lower-third-controls">
-			{#each sortedHosts as host (host.id)}
+			{#each hosts as host (host.id)}
 				<li data-active={activeShowHostId === host.id}>
 					<label class="field">
 						{host.displayName}

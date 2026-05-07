@@ -21,14 +21,6 @@
 	const host = $derived(hosts.current?.[0] ?? null);
 	const asset = $derived(host ? getLowerThirdAsset(host) : null);
 	const title = $derived(host ? getLowerThirdTitle(host) : '');
-
-	$effect(() => {
-		console.log('[lower-third:overlay] active host', {
-			activeShowHostId,
-			hostId: host?.id ?? null,
-			showId
-		});
-	});
 </script>
 
 {#if host && asset && activeShowHostId}

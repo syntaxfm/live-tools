@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { getDb, getSession } from 'jazz-tools/svelte';
-
-	import { deleteTickerMessage } from '$lib/components/shows/show-actions';
 	import { app, type Show, type TickerMessage } from '$lib/schema';
 
 	let {
@@ -14,7 +12,6 @@
 
 	const db = getDb();
 	const session = getSession();
-	const isAdmin = $derived(session?.claims.isAdmin === true);
 	let draftMessage = $state('');
 	let pendingActionId = $state<string | null>(null);
 	let error = $state<string | null>(null);
@@ -92,12 +89,7 @@
 		error = null;
 
 		try {
-			await deleteTickerMessage({
-				db,
-				isAdmin,
-				message,
-				showId: show.id
-			});
+			db.delete(app.tickerMessages, message.id);
 		} catch (caughtError) {
 			console.error('Unable to remove ticker message', caughtError);
 			error = 'Unable to remove ticker message';

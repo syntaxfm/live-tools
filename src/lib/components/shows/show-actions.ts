@@ -1,7 +1,7 @@
 import type { Db } from 'jazz-tools';
 import type { ShowHostOption } from '$lib/components/shows/show-host-options';
 import { app } from '$lib/schema';
-import type { Show, ShowHost, ShowInsert, TickerMessage } from '$lib/schema';
+import type { Show, ShowHost } from '$lib/schema';
 import type { ShowStatus } from '$lib/utils/shows';
 
 interface AdminMutationOptions {
@@ -19,10 +19,6 @@ interface CreateShowOptions {
 	status: ShowStatus;
 }
 
-interface UpdateShowStatusOptions extends AdminMutationOptions {
-	status: ShowStatus;
-}
-
 interface UpdateAudienceSubmissionGateOptions extends AdminMutationOptions {
 	isOpen: boolean;
 }
@@ -34,16 +30,6 @@ interface UpdateShowHostLowerThirdTitleOptions extends AdminMutationOptions {
 
 interface BroadcastLowerThirdOptions extends AdminMutationOptions {
 	host: ShowHost;
-}
-
-interface UpdateShowHostsOptions extends AdminMutationOptions {
-	activeLowerThirdShowHostId: string | null | undefined;
-	currentHosts: readonly ShowHost[];
-	hosts: readonly ShowHostOption[];
-}
-
-interface DeleteTickerMessageOptions extends AdminMutationOptions {
-	message: TickerMessage;
 }
 
 // Jazz currently persists this ref reliably when it is a UUID, but clearing it to null
@@ -85,28 +71,6 @@ export async function createShow({
 	);
 
 	return show;
-}
-
-export async function updateShowStatus({
-	db,
-	isAdmin,
-	showId,
-	status
-}: UpdateShowStatusOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	const updates: Partial<ShowInsert> =
-		status === 'ended'
-			? {
-					status,
-					endedAt: new Date()
-				}
-			: {
-					status,
-					endedAt: null
-				};
-
-	await db.update(app.shows, showId, updates).wait({ tier: 'global' });
 }
 
 export async function updateAudienceSubmissionGate({
@@ -175,21 +139,6 @@ export async function clearLowerThird({
 	});
 
 	await handle.wait({ tier: 'global' });
-}
-
-export async function deleteTickerMessage({
-	db,
-	isAdmin,
-	message,
-	showId
-}: DeleteTickerMessageOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	if (message.showId !== showId) {
-		throw new Error('Ticker message does not belong to show');
-	}
-
-	await db.delete(app.tickerMessages, message.id).wait({ tier: 'global' });
 }
 
 export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions): Promise<void> {

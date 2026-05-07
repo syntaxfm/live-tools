@@ -29,8 +29,4 @@
 
 {#if isExternalSession}
 	{@render children()}
-{:else}
-	<section class="surface">
-		<p class="status" data-state="connecting">Checking session</p>
-	</section>
 {/if}
