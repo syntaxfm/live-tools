@@ -12,10 +12,6 @@ import {
 } from '$lib/server/app-user-provisioning';
 import { authJazzContext } from '$lib/server/auth-jazz-context';
 import { isAdminGithubUser, resolveGithubUserIdForUser } from '$lib/server/github-auth';
-import {
-	getGithubUserIdFromProfile,
-	getGithubUsernameFromProfile
-} from '$lib/utils/github-usernames';
 
 if (!env.BETTER_AUTH_SECRET) {
 	throw new Error('BETTER_AUTH_SECRET is required for Better Auth');
@@ -71,17 +67,7 @@ export const auth = betterAuth({
 		session: {
 			create: {
 				after: async (session) => {
-					const startedAt = performance.now();
-					console.info('[auth:hook:session.create] start', {
-						userId: session.userId,
-						sessionId: session.id
-					});
 					await provisionAppUserForUserId(session.userId);
-					console.info('[auth:hook:session.create] complete', {
-						userId: session.userId,
-						sessionId: session.id,
-						elapsedMs: Math.round(performance.now() - startedAt)
-					});
 				}
 			}
 		}
@@ -93,8 +79,7 @@ export const auth = betterAuth({
 			clientSecret: env.GITHUB_CLIENT_SECRET,
 			overrideUserInfoOnSignIn: true,
 			mapProfileToUser: (profile) => ({
-				githubUserId: getGithubUserIdFromProfile(profile),
-				githubUsername: getGithubUsernameFromProfile(profile)
+				githubUsername: profile
 			})
 		}
 	},
@@ -106,19 +91,8 @@ export const auth = betterAuth({
 			jwt: {
 				issuer: env.ORIGIN,
 				definePayload: async ({ user }) => {
-					const startedAt = performance.now();
-					console.info('[auth:jwt] define payload start', {
-						userId: user.id,
-						hasGithubUserId: Boolean(user.githubUserId),
-						hasGithubUsername: Boolean(user.githubUsername)
-					});
 					const githubUserId =
 						user.githubUserId ?? (await resolveGithubUserIdForUser(user.id)) ?? undefined;
-					console.info('[auth:jwt] define payload complete', {
-						userId: user.id,
-						hasGithubUserId: Boolean(githubUserId),
-						elapsedMs: Math.round(performance.now() - startedAt)
-					});
 
 					return {
 						claims: {
@@ -129,7 +103,6 @@ export const auth = betterAuth({
 							githubUserId: githubUserId ?? null,
 							githubUsername: user.githubUsername ?? null,
 							isAdmin: isAdminGithubUser({
-								githubUserId,
 								githubUsername: user.githubUsername
 							})
 						}

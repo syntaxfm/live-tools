@@ -54,26 +54,14 @@ async function upsertAppUser(
 		return;
 	}
 
-	console.info('[auth:provision:app-user] insert start', { userId: user.id });
-	const insertedUser = await db.insert(app.appUsers, appUser).wait({ tier: 'global' });
-	console.info('[auth:provision:app-user] insert complete', {
-		userId: user.id,
-		appUserId: insertedUser.id,
-		elapsedMs: Math.round(performance.now() - startedAt)
-	});
+	await db.insert(app.appUsers, appUser).wait({ tier: 'global' });
 }
 
 export async function provisionAppUserForUserId(userId: string): Promise<void> {
 	const startedAt = performance.now();
-	console.info('[auth:provision:user] start', { userId });
+
 	const db = authJazzContext().asBackend(app);
-	console.info('[auth:provision:user] query better auth user start', { userId });
 	const user = await db.one(app.better_auth_user.where({ id: userId }), { tier: 'global' });
-	console.info('[auth:provision:user] query better auth user complete', {
-		userId,
-		foundUser: Boolean(user),
-		elapsedMs: Math.round(performance.now() - startedAt)
-	});
 
 	if (!user) {
 		console.error('Unable to provision app user without Better Auth user', { userId });
