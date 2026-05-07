@@ -5,22 +5,18 @@
 	import { saveAudienceSubmission } from '$lib/components/shows/submission-actions';
 	import { fetchPageTitle } from '$lib/utils/page-title';
 	import { canEditAudienceSubmission, getLatestAudienceSubmission } from '$lib/utils/submissions';
-	import { app } from '$lib/schema';
+	import { app, type Show } from '$lib/schema';
 
-	interface Props {
-		showId: string | undefined;
-	}
-
-	let { showId }: Props = $props();
+	let { show }: { show: Show } = $props();
 
 	const db = getDb();
 	const session = getSession();
 
-	const shows = new QuerySubscription(() => (showId ? app.shows.where({ id: showId }) : undefined));
-
 	const ownSubmissions = new QuerySubscription(
 		() =>
-			showId ? app.audienceSubmissions.where({ showId, authorId: session?.user_id }) : undefined,
+			show.id
+				? app.audienceSubmissions.where({ showId: show.id, authorId: session?.user_id })
+				: undefined,
 		{ tier: 'global' }
 	);
 
@@ -28,7 +24,6 @@
 	let error = $state<string | null>(null);
 	let isConfirming = $state(false);
 
-	const show = $derived(shows.current?.[0] ?? null);
 	const ownSubmission = $derived(getLatestAudienceSubmission(ownSubmissions.current ?? []));
 	const canEdit = $derived(canEditAudienceSubmission(show));
 	const isDevLocalFirst = $derived(dev && session?.authMode === 'local-first');

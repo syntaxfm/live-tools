@@ -47,13 +47,6 @@
 			db.delete(app.showHosts, host.id);
 		} else {
 			if (admin) {
-				console.log({
-					showId: show.id,
-					hostId: admin_id,
-					displayName: admin.displayName,
-					avatarUrl: admin.avatarUrl,
-					position: 0
-				});
 				db.insert(app.showHosts, {
 					showId: show.id,
 					hostId: admin_id,

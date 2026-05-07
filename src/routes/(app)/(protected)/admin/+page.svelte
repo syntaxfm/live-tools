@@ -20,7 +20,6 @@
 			})
 	);
 	const session = getSession();
-	$inspect(session);
 	const isAdmin = $derived(session?.claims.isAdmin);
 	const show = $derived(shows.current?.[0]);
 </script>

@@ -24,10 +24,20 @@
 	const db = getDb();
 	const session = getSession();
 
-	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
+	const shows = new QuerySubscription(app.shows.where({}));
 
-	const sortedShows = $derived([...(shows.current ?? [])].sort(compareShowsByRecency));
-	const hostOptions = $derived(data.adminHostOptions);
+	const all_users = new QuerySubscription(app.appUsers.where({}));
+
+	const admins = $derived(
+		all_users?.current
+			? all_users.current.filter((user) =>
+					['stolinski', 'wesbos', 'w3cj', 'randyrektor'].includes(user.githubUsername ?? '')
+				)
+			: []
+	);
+
+	$inspect(admins);
+
 	const user = $derived(session?.claims);
 	const isAdmin = $derived(user?.isAdmin === true);
 	const defaultShowDate = formatShowDateInput(new Date());
@@ -44,12 +54,6 @@
 			formError = 'Admin access required';
 			return;
 		}
-
-		if (!data.currentAppUserId) {
-			formError = 'Current admin profile required';
-			return;
-		}
-
 		const form = event.currentTarget;
 
 		if (!(form instanceof HTMLFormElement)) {
@@ -182,17 +186,15 @@
 				<button disabled={isCreating} type="submit">Create</button>
 			</div>
 
-			{#if hostOptions.length}
-				<fieldset>
-					<legend>Hosts</legend>
-					{#each hostOptions as host (host.id)}
-						<label class="checkbox-field">
-							<input checked name="hostIds" type="checkbox" value={host.id} />
-							{host.displayName}
-						</label>
-					{/each}
-				</fieldset>
-			{/if}
+			<fieldset>
+				<legend>Hosts</legend>
+				{#each admins as host (host.id)}
+					<label class="checkbox-field">
+						<input checked name="hostIds" type="checkbox" value={host.id} />
+						{host.displayName}
+					</label>
+				{/each}
+			</fieldset>
 
 			{#if formError}
 				<p class="status" data-state="warning">{formError}</p>

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import AudienceShow from '$lib/components/shows/AudienceShow.svelte';
+	import ApprovedSubmissionsList from '$lib/components/shows/ApprovedSubmissionsList.svelte';
+	import AudienceSubmissionPanel from '$lib/components/shows/AudienceSubmissionPanel.svelte';
 	import { app } from '$lib/schema';
 	import { QuerySubscription } from 'jazz-tools/svelte';
 
@@ -9,9 +10,15 @@
 				status: 'live'
 			})
 			.orderBy('startsAt', 'desc')
+			.include({
+				audienceSubmissionsViaShow: app.audienceSubmissions.where({})
+			})
 	);
+
+	$inspect(shows);
 </script>
 
 {#if shows.current?.[0]}
-	<AudienceShow showId={shows.current[0].id} />
+	<AudienceSubmissionPanel {show} />
+	<ApprovedSubmissionsList {show} />
 {/if}
