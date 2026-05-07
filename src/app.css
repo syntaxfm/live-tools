@@ -376,13 +376,13 @@ label,
 }
 
 .tab[aria-selected='true'],
-.tab.is-active {
+.tab.active {
 	background: var(--color-surface-raised);
 	color: var(--color-accent);
 }
 
 .tab[aria-selected='true']::after,
-.tab.is-active::after {
+.tab.active::after {
 	position: absolute;
 	right: 0;
 	bottom: calc(var(--border-width) * -1);

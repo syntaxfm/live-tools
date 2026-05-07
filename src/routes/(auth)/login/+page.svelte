@@ -4,10 +4,8 @@
 	import { authClient } from '$lib/auth-client';
 
 	const session = getSession();
-	$inspect(session);
 	const user = $derived(session?.claims ?? null);
-	const roleLabel = $derived(user?.isAdmin === true ? 'admin' : 'viewer');
-	$inspect(user);
+	const roleLabel = $derived(user?.isAdmin ? 'admin' : 'viewer');
 	let signInError = $state<string | null>(null);
 
 	async function signInWithGitHub(): Promise<void> {
@@ -29,7 +27,11 @@
 		<h1>Signed in</h1>
 		<p>{user?.displayName ?? session?.user_id}</p>
 		<p>Role: {roleLabel}</p>
-		<p><a href={resolve('/host')}>Continue to host</a></p>
+		{#if user?.isAdmin}
+			<p><a href={resolve('/admin')}>Continue to Admin</a></p>
+		{:else}
+			<p><a href={resolve('/')}>Continue to App</a></p>
+		{/if}
 	{:else}
 		<h1>Login</h1>
 		<button data-variant="primary" onclick={signInWithGitHub}>Sign in with GitHub</button>

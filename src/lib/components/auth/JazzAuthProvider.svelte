@@ -5,27 +5,22 @@
 	import { authClient } from '$lib/auth-client';
 	import { onDestroy } from 'svelte';
 
-	interface Props {
-		children: import('svelte').Snippet;
-		identityMode?: JazzIdentityMode;
-	}
-
-	type JazzIdentityMode = 'auth' | 'anon';
-
-	let { children }: Props = $props();
+	let { children } = $props();
 	const session = authClient.useSession();
 
 	let client = $state<ReturnType<typeof createJazzClient> | null>(null);
 
 	const unsubscribe = session.subscribe((value) => {
-		authClient.token().then(({ data }) => {
-			client = createJazzClient({
-				env: dev ? 'dev' : 'prod',
-				appId: env.PUBLIC_JAZZ_APP_ID,
-				jwtToken: data?.token ? data.token : undefined,
-				serverUrl: env.PUBLIC_JAZZ_SERVER_URL || 'http://localhost:7012/'
+		if (!value.isPending) {
+			authClient.token().then(({ data }) => {
+				client = createJazzClient({
+					env: dev ? 'dev' : 'prod',
+					appId: env.PUBLIC_JAZZ_APP_ID,
+					jwtToken: data?.token ? data.token : undefined,
+					serverUrl: env.PUBLIC_JAZZ_SERVER_URL || 'http://localhost:7012/'
+				});
 			});
-		});
+		}
 	});
 	onDestroy(unsubscribe);
 </script>
