@@ -1,17 +1,19 @@
 <script lang="ts">
-	import { getSession, QuerySubscription } from 'jazz-tools/svelte';
-
+	import { QuerySubscription } from 'jazz-tools/svelte';
 	import HostShow from '$lib/components/shows/HostShow.svelte';
-	import { getCurrentShow } from '$lib/utils/shows';
 	import { app } from '$lib/schema';
 	import ShowStatePanel from '$lib/components/shows/ShowStatePanel.svelte';
-	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
-	const currentShow = $derived(getCurrentShow(shows.current ?? []));
-	const session = getSession();
-	$inspect(session);
+
+	const shows = new QuerySubscription(
+		app.shows
+			.where({
+				status: 'live'
+			})
+			.orderBy('startsAt', 'desc')
+	);
 </script>
 
-{#if currentShow}
-	<ShowStatePanel showId={currentShow.id} />
-	<HostShow showId={currentShow.id} />
+{#if shows.current?.[0]}
+	<ShowStatePanel showId={shows.current[0].id} />
+	<HostShow showId={shows.current[0].id} />
 {/if}

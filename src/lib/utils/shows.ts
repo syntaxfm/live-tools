@@ -57,15 +57,6 @@ export function compareShowsByRecency(
 	);
 }
 
-export function getCurrentShow<TShow extends ShowSelectionState>(
-	shows: readonly TShow[]
-): TShow | null {
-	return (
-		[...shows].filter((show) => isPublicShowStatus(show.status)).sort(compareShowsByRecency)[0] ??
-		null
-	);
-}
-
 export function compareShowHostsByPosition(first: ShowHost, second: ShowHost): number {
 	return first.position - second.position || first.displayName.localeCompare(second.displayName);
 }

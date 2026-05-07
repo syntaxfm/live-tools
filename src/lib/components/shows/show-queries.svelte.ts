@@ -1,18 +1,6 @@
 import { QuerySubscription } from 'jazz-tools/svelte';
-
 import { app } from '$lib/schema';
-import type { Show, ShowHost, TickerMessage } from '$lib/schema';
-
-export function createShowSubscription(showId: () => string | undefined): QuerySubscription<Show> {
-	return new QuerySubscription(
-		() => {
-			const id = showId();
-
-			return id ? app.shows.where({ id }) : undefined;
-		},
-		{ tier: 'global' }
-	);
-}
+import type { ShowHost, TickerMessage } from '$lib/schema';
 
 export function createShowHostsSubscription(
 	showId: () => string | undefined

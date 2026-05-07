@@ -16,10 +16,7 @@
 	const db = getDb();
 	const session = getSession();
 
-	const shows = new QuerySubscription(
-		() => (showId ? app.shows.where({ id: showId }) : undefined),
-		{ tier: 'global' }
-	);
+	const shows = new QuerySubscription(() => (showId ? app.shows.where({ id: showId }) : undefined));
 
 	const ownSubmissions = new QuerySubscription(
 		() =>

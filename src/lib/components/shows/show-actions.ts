@@ -5,6 +5,7 @@ import { app } from '$lib/schema';
 import type { Show, ShowHost, ShowInsert, TickerMessage } from '$lib/schema';
 import type { ShowStatus } from '$lib/utils/shows';
 import { getNextTickerMessagePosition } from '$lib/utils/ticker-messages';
+import { getDb } from 'jazz-tools/svelte';
 
 interface AdminMutationOptions {
 	db: Db;
@@ -174,12 +175,12 @@ export async function broadcastLowerThird({
 export async function updateShowHosts({
 	activeLowerThirdShowHostId,
 	currentHosts,
-	db,
 	hosts,
 	isAdmin,
 	showId
 }: UpdateShowHostsOptions): Promise<void> {
 	assertAdmin(isAdmin);
+	const db = getDb();
 
 	if (currentHosts.some((host) => host.showId !== showId)) {
 		throw new Error('Host does not belong to show');
@@ -241,21 +242,7 @@ export async function clearLowerThird({
 		activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
 	});
 
-	console.log('[lower-third:clear] batch', handle.batchId, { showId });
-
-	try {
-		await handle.wait({ tier: 'global' });
-		console.log('[lower-third:clear] persisted', handle.batchId);
-
-		const persistedShow = await db.one(app.shows.where({ id: showId }), { tier: 'global' });
-		console.log('[lower-third:clear] readback', {
-			activeLowerThirdShowHostId: persistedShow?.activeLowerThirdShowHostId ?? null,
-			showId
-		});
-	} catch (error) {
-		console.error('[lower-third:clear] rejected', handle.batchId, error);
-		throw error;
-	}
+	await handle.wait({ tier: 'global' });
 }
 
 export async function addTickerMessage({

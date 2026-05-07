@@ -1,20 +1,23 @@
 <script lang="ts">
 	import OverlayShow from '$lib/components/shows/OverlayShow.svelte';
 	import { app } from '$lib/schema';
-	import type { OverlayFeature } from '$lib/utils/overlays';
-	import { getCurrentShow } from '$lib/utils/shows';
 	import { QuerySubscription } from 'jazz-tools/svelte';
+	import type { OverlayFeature } from '$lib/utils/overlays';
 
 	interface Props {
 		feature: OverlayFeature;
 	}
 
 	let { feature }: Props = $props();
-
-	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
-	const currentShow = $derived(getCurrentShow(shows.current ?? []));
+	const shows = new QuerySubscription(
+		app.shows
+			.where({
+				status: 'live'
+			})
+			.orderBy('startsAt', 'desc')
+	);
 </script>
 
-{#if currentShow}
-	<OverlayShow {feature} showId={currentShow.id} />
+{#if shows.current?.[0]}
+	<OverlayShow {feature} showId={shows.current[0].id} />
 {/if}

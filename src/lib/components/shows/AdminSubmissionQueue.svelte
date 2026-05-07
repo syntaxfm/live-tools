@@ -5,7 +5,7 @@
 		featureAudienceSubmission,
 		moderateAudienceSubmission
 	} from '$lib/components/shows/submission-actions';
-	import { app } from '$lib/schema';
+	import { app, type Show } from '$lib/schema';
 	import {
 		AUDIENCE_SUBMISSION_STATUSES,
 		compareAudienceSubmissionsByNewest,
@@ -13,17 +13,17 @@
 	} from '$lib/utils/submissions';
 	import type { AudienceSubmissionStatus } from '$lib/utils/submissions';
 
-	interface Props {
-		showId: string | undefined;
-	}
-
-	let { showId }: Props = $props();
+	let {
+		show
+	}: {
+		show: Show;
+	} = $props();
 
 	const db = getDb();
 	const submissions = new QuerySubscription(() =>
-		showId ? app.audienceSubmissions.where({ showId }) : undefined
+		show.id ? app.audienceSubmissions.where({ showId: show.id }) : undefined
 	);
-	$inspect(submissions.current);
+
 	const session = getSession();
 	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const sortedSubmissions = $derived(
@@ -40,7 +40,7 @@
 		submissionId: string,
 		status: AudienceSubmissionStatus
 	): Promise<void> {
-		if (!session || !showId) {
+		if (!session || !show.id) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -65,7 +65,7 @@
 	}
 
 	async function handleFeature(submissionId: string): Promise<void> {
-		if (!session || !showId) {
+		if (!session || !show.id) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -84,7 +84,7 @@
 			await featureAudienceSubmission({
 				db,
 				isAdmin,
-				showId,
+				showId: show.id,
 				submission
 			});
 		} catch (caughtError) {
@@ -96,7 +96,7 @@
 	}
 
 	async function handleClearFeatured(): Promise<void> {
-		if (!session || !showId) {
+		if (!session || !show.id) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -108,7 +108,7 @@
 			await clearFeaturedSubmission({
 				db,
 				isAdmin,
-				showId
+				showId: show.id
 			});
 		} catch (caughtError) {
 			console.error('Unable to clear featured submission', caughtError);

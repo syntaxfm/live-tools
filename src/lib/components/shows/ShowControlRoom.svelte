@@ -1,30 +1,29 @@
 <script lang="ts">
-	import { getJazzContext } from 'jazz-tools/svelte';
+	import { getSession } from 'jazz-tools/svelte';
 
 	import AdminSubmissionQueue from '$lib/components/shows/AdminSubmissionQueue.svelte';
-	import type { ShowHostOption } from '$lib/components/shows/show-host-options';
 	import LowerThirdControls from '$lib/components/shows/LowerThirdControls.svelte';
 	import ShowStatePanel from '$lib/components/shows/ShowStatePanel.svelte';
 	import ShowHostsPanel from '$lib/components/shows/ShowHostsPanel.svelte';
 	import TickerControls from '$lib/components/shows/TickerControls.svelte';
 	import OverlayURLs from './OverlayURLs.svelte';
+	import type { Show } from '$lib/schema';
 
-	interface Props {
-		hostOptions: readonly ShowHostOption[];
-		showId: string | undefined;
-	}
+	let {
+		show
+	}: {
+		show: Show;
+	} = $props();
 
-	let { hostOptions, showId }: Props = $props();
-
-	const jazzContext = getJazzContext();
-	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
+	const session = getSession();
+	const isAdmin = $derived(session?.claims.isAdmin);
 </script>
 
 {#if isAdmin}
-	<ShowStatePanel {showId} />
-	<ShowHostsPanel {hostOptions} {showId} />
-	<LowerThirdControls {showId} />
-	<TickerControls {showId} />
-	<AdminSubmissionQueue {showId} />
+	<ShowStatePanel {show} />
+	<ShowHostsPanel {show} />
+	<LowerThirdControls {show} />
+	<TickerControls {show} />
+	<AdminSubmissionQueue {show} />
 	<OverlayURLs />
 {/if}

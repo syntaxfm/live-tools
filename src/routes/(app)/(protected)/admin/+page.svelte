@@ -1,21 +1,17 @@
 <script lang="ts">
 	import { QuerySubscription } from 'jazz-tools/svelte';
-	import type { PageData } from './$types';
-
 	import ShowControlRoom from '$lib/components/shows/ShowControlRoom.svelte';
 	import { app } from '$lib/schema';
-	import { getCurrentShow } from '$lib/utils/shows';
 
-	interface Props {
-		data: PageData;
-	}
-
-	let { data }: Props = $props();
-
-	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
-	const currentShow = $derived(getCurrentShow(shows.current ?? []));
+	const shows = new QuerySubscription(
+		app.shows
+			.where({
+				status: 'live'
+			})
+			.orderBy('startsAt', 'desc')
+	);
 </script>
 
-{#if currentShow}
-	<ShowControlRoom hostOptions={data.adminHostOptions} showId={currentShow.id} />
+{#if shows.current?.[0]}
+	<ShowControlRoom show={shows.current[0]} />
 {/if}

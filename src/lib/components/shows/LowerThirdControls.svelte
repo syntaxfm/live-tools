@@ -2,10 +2,7 @@
 	import { getDb, getSession } from 'jazz-tools/svelte';
 	import { onDestroy } from 'svelte';
 
-	import {
-		createShowHostsSubscription,
-		createShowSubscription
-	} from '$lib/components/shows/show-queries.svelte';
+	import { createShowHostsSubscription } from '$lib/components/shows/show-queries.svelte';
 	import {
 		broadcastLowerThird,
 		clearLowerThird,
@@ -13,22 +10,19 @@
 	} from '$lib/components/shows/show-actions';
 	import { getLowerThirdTitle, LOWER_THIRD_DISPLAY_MS } from '$lib/utils/lower-thirds';
 	import { compareShowHostsByPosition } from '$lib/utils/shows';
+	import type { Show } from '$lib/schema';
 
-	interface Props {
-		showId: string | undefined;
-	}
-
-	let { showId }: Props = $props();
+	let {
+		show
+	}: {
+		show: Show;
+	} = $props();
 
 	const db = getDb();
 	const session = getSession();
 
-	const unsubscribeMutationError = db.onMutationError((event) => {
-		console.error('[jazz:mutation-error]', event);
-	});
-	const shows = createShowSubscription(() => showId);
-	const hosts = createShowHostsSubscription(() => showId);
-	const show = $derived(shows.current?.[0] ?? null);
+	const hosts = createShowHostsSubscription(() => show.id);
+
 	const sortedHosts = $derived([...(hosts.current ?? [])].sort(compareShowHostsByPosition));
 	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
@@ -40,7 +34,6 @@
 
 	onDestroy(() => {
 		clearAutoHideTimer();
-		unsubscribeMutationError();
 	});
 
 	async function handleTitleChange(event: Event): Promise<void> {
@@ -53,7 +46,7 @@
 
 		const host = sortedHosts.find((candidate) => candidate.id === input.dataset.hostId);
 
-		if (!showId || !host) {
+		if (!show.id || !host) {
 			error = 'Host not found';
 			return;
 		}
@@ -66,7 +59,7 @@
 				db,
 				host,
 				isAdmin,
-				showId,
+				showId: show.id,
 				title: input.value
 			});
 		} catch (caughtError) {
@@ -87,7 +80,7 @@
 
 		const host = sortedHosts.find((candidate) => candidate.id === button.dataset.hostId);
 
-		if (!showId || !host) {
+		if (!show.id || !host) {
 			error = 'Unable to broadcast';
 			return;
 		}
@@ -101,7 +94,7 @@
 				db,
 				host,
 				isAdmin,
-				showId
+				showId: show.id
 			});
 			scheduleAutoHide();
 		} catch (caughtError) {
@@ -118,7 +111,7 @@
 	}
 
 	async function clearActiveLowerThird(shouldShowPending: boolean): Promise<void> {
-		if (!showId) {
+		if (!show.id) {
 			error = 'Unable to hide lower third';
 			return;
 		}
@@ -128,12 +121,11 @@
 		}
 		error = null;
 
-		console.log('hiding lower third for show', showId);
 		try {
 			await clearLowerThird({
 				db,
 				isAdmin,
-				showId
+				showId: show.id
 			});
 		} catch (caughtError) {
 			console.error('Unable to hide lower third', caughtError);
@@ -165,11 +157,7 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">Lower thirds</p>
 
-	{#if hosts.loading || shows.loading}
-		<h2>Loading</h2>
-	{:else if shows.error}
-		<h2>{shows.error.message}</h2>
-	{:else if hosts.error}
+	{#if hosts.error}
 		<h2>{hosts.error.message}</h2>
 	{:else if sortedHosts.length}
 		<ul class="lower-third-controls">

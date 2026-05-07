@@ -1,24 +1,21 @@
 <script lang="ts">
 	import { getDb, getSession } from 'jazz-tools/svelte';
 
-	import {
-		createTickerMessagesSubscription,
-		createShowSubscription
-	} from '$lib/components/shows/show-queries.svelte';
+	import { createTickerMessagesSubscription } from '$lib/components/shows/show-queries.svelte';
 	import { addTickerMessage, deleteTickerMessage } from '$lib/components/shows/show-actions';
 	import { compareTickerMessagesByPosition } from '$lib/utils/ticker-messages';
+	import type { Show } from '$lib/schema';
 
-	interface Props {
-		showId: string | undefined;
-	}
-
-	let { showId }: Props = $props();
+	let {
+		show
+	}: {
+		show: Show;
+	} = $props();
 
 	const db = getDb();
 	const session = getSession();
 
-	const shows = createShowSubscription(() => showId);
-	const messages = createTickerMessagesSubscription(() => showId);
+	const messages = createTickerMessagesSubscription(() => show.id);
 
 	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const sortedMessages = $derived(
@@ -40,7 +37,7 @@
 	async function handleAddMessage(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!session?.user_id || !showId) {
+		if (!session?.user_id || !show.id) {
 			error = 'Admin profile required';
 			return;
 		}
@@ -54,7 +51,7 @@
 				db,
 				isAdmin,
 				messages: sortedMessages,
-				showId,
+				showId: show.id,
 				text: draftMessage
 			});
 			draftMessage = '';
@@ -74,7 +71,7 @@
 			return;
 		}
 
-		if (!showId) {
+		if (!show.id) {
 			error = 'Show required';
 			return;
 		}
@@ -94,7 +91,7 @@
 				db,
 				isAdmin,
 				message,
-				showId
+				showId: show.id
 			});
 		} catch (caughtError) {
 			console.error('Unable to remove ticker message', caughtError);
@@ -108,7 +105,7 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">Ticker</p>
 
-	{#if shows.loading || messages.loading}{:else}
+	{#if messages.loading}{:else}
 		<form class="ticker-message-form" autocomplete="off" onsubmit={handleAddMessage}>
 			<label class="field">
 				Message

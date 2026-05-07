@@ -1,34 +1,28 @@
 <script lang="ts">
-	import { getDb, getJazzContext } from 'jazz-tools/svelte';
+	import { getDb, getSession } from 'jazz-tools/svelte';
 
-	import { createShowSubscription } from '$lib/components/shows/show-queries.svelte';
 	import {
 		updateAudienceSubmissionGate,
 		updateShowStatus
 	} from '$lib/components/shows/show-actions';
 	import { formatShowDate, parseShowStatus, SHOW_STATUSES } from '$lib/utils/shows';
+	import type { Show } from '$lib/schema';
 
-	interface Props {
-		showId: string | undefined;
-	}
-
-	let { showId }: Props = $props();
+	let {
+		show
+	}: {
+		show: Show;
+	} = $props();
 
 	const db = getDb();
-	const jazzContext = getJazzContext();
-	const shows = createShowSubscription(() => showId);
-	const show = $derived(shows.current?.[0] ?? null);
-	const isAdmin = $derived(jazzContext.session?.claims.isAdmin === true);
+	const session = getSession();
+	const isAdmin = $derived(session?.claims.isAdmin) as boolean;
 	const showDate = $derived(formatShowDate(show?.startsAt ?? null));
 
 	let error = $state<string | null>(null);
 	let pendingControl = $state<'status' | 'submissions' | null>(null);
 
 	async function handleStatusChange(event: Event): Promise<void> {
-		if (!show) {
-			return;
-		}
-
 		const select = event.currentTarget;
 
 		if (!(select instanceof HTMLSelectElement)) {
@@ -55,10 +49,6 @@
 	}
 
 	async function handleAudienceSubmissionsChange(event: Event): Promise<void> {
-		if (!show) {
-			return;
-		}
-
 		const input = event.currentTarget;
 
 		if (!(input instanceof HTMLInputElement)) {
@@ -88,46 +78,38 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">State</p>
 
-	{#if shows.loading}
-		<h2>Loading</h2>
-	{:else if shows.error}
-		<h2>{shows.error.message}</h2>
-	{:else if show}
-		<h2>{showDate}</h2>
+	<h2>{showDate}</h2>
 
-		<div class="form-row">
-			<label class="field">
-				Status
-				<select
-					disabled={pendingControl === 'status'}
-					value={show.status}
-					onchange={handleStatusChange}
-				>
-					{#each SHOW_STATUSES as status (status)}
-						<option value={status}>{status}</option>
-					{/each}
-				</select>
-			</label>
+	<div class="form-row">
+		<label class="field">
+			Status
+			<select
+				disabled={pendingControl === 'status'}
+				value={show.status}
+				onchange={handleStatusChange}
+			>
+				{#each SHOW_STATUSES as status (status)}
+					<option value={status}>{status}</option>
+				{/each}
+			</select>
+		</label>
 
-			<label class="checkbox-field">
-				<input
-					checked={show.audienceSubmissionsOpen}
-					disabled={pendingControl === 'submissions'}
-					type="checkbox"
-					onchange={handleAudienceSubmissionsChange}
-				/>
-				Audience submissions
-			</label>
-		</div>
+		<label class="checkbox-field">
+			<input
+				checked={show.audienceSubmissionsOpen}
+				disabled={pendingControl === 'submissions'}
+				type="checkbox"
+				onchange={handleAudienceSubmissionsChange}
+			/>
+			Audience submissions
+		</label>
+	</div>
 
-		{#if show.endedAt}
-			<p class="status" data-state="success">Ended {formatShowDate(show.endedAt)}</p>
-		{/if}
+	{#if show.endedAt}
+		<p class="status" data-state="success">Ended {formatShowDate(show.endedAt)}</p>
+	{/if}
 
-		{#if error}
-			<p class="status" data-state="warning">{error}</p>
-		{/if}
-	{:else}
-		<h2>Show not found</h2>
+	{#if error}
+		<p class="status" data-state="warning">{error}</p>
 	{/if}
 </section>

@@ -103,16 +103,6 @@
 		view-transition-name: submissions-overlay;
 	}
 
-	.submissions-overlay > p {
-		color: var(--color-accent);
-		font-family: var(--font-label);
-		font-size: 24px;
-		font-weight: 700;
-		letter-spacing: 0;
-		text-align: right;
-		text-transform: uppercase;
-	}
-
 	.submissions-overlay__list {
 		display: grid;
 		margin: 0;
