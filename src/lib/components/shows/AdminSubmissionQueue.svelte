@@ -20,10 +20,10 @@
 	let { showId }: Props = $props();
 
 	const db = getDb();
-	const submissions = new QuerySubscription(
-		() => (showId ? app.audienceSubmissions.where({ showId }) : undefined),
-		{ tier: 'global' }
+	const submissions = new QuerySubscription(() =>
+		showId ? app.audienceSubmissions.where({ showId }) : undefined
 	);
+	$inspect(submissions.current);
 	const session = getSession();
 	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const sortedSubmissions = $derived(
@@ -123,9 +123,7 @@
 	<p class="section-label">Queue</p>
 	<h2>Submissions</h2>
 
-	{#if submissions.loading}
-		<p class="status" data-state="connecting">Loading</p>
-	{:else if submissions.error}
+	{#if submissions.error}
 		<p class="status" data-state="warning">{submissions.error.message}</p>
 	{:else if sortedSubmissions.length}
 		<ul class="submission-list">

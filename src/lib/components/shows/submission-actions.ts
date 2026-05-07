@@ -2,7 +2,7 @@ import type { Db } from 'jazz-tools';
 
 import { resolve } from '$app/paths';
 import { app } from '$lib/schema';
-import type { AppUser, AudienceSubmission, AudienceSubmissionInsert, Show } from '$lib/schema';
+import type { AudienceSubmission, AudienceSubmissionInsert, Show } from '$lib/schema';
 import { canEditAudienceSubmission } from '$lib/utils/submissions';
 import type { AudienceSubmissionKind, AudienceSubmissionStatus } from '$lib/utils/submissions';
 
@@ -39,7 +39,7 @@ interface FeatureAudienceSubmissionOptions {
 }
 
 interface SetAudienceSubmissionVoteOptions {
-	appUser: AppUser | null;
+	appUserId: string | null;
 	isUpvoted: boolean;
 	showId: string;
 	submission: AudienceSubmission;
@@ -145,12 +145,12 @@ export async function featureAudienceSubmission({
 }
 
 export async function setAudienceSubmissionVote({
-	appUser,
+	appUserId,
 	isUpvoted,
 	showId,
 	submission
 }: SetAudienceSubmissionVoteOptions): Promise<void> {
-	if (!appUser) {
+	if (!appUserId) {
 		throw new Error('App user profile required');
 	}
 
@@ -162,7 +162,7 @@ export async function setAudienceSubmissionVote({
 		throw new Error('Only approved submissions can be voted on');
 	}
 
-	if (submission.authorId === appUser.id) {
+	if (submission.authorId === appUserId) {
 		throw new Error('Cannot vote on your own submission');
 	}
 

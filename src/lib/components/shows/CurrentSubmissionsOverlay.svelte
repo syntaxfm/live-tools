@@ -8,8 +8,7 @@
 			.where({
 				status: 'live'
 			})
-			.orderBy('startsAt', 'desc'),
-		{ tier: 'global' }
+			.orderBy('startsAt', 'desc')
 	);
 </script>
 

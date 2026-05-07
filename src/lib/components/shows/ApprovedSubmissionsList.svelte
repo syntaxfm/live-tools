@@ -53,7 +53,7 @@
 
 		try {
 			await setAudienceSubmissionVote({
-				appUser: session?.user_id,
+				appUserId: session.user_id,
 				isUpvoted: !existingVote || existingVote.value <= 0,
 				showId,
 				submission

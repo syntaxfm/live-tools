@@ -1,5 +1,6 @@
 import type { Db } from 'jazz-tools';
 
+import type { ShowHostOption } from '$lib/components/shows/show-host-options';
 import { app } from '$lib/schema';
 import type { Show, ShowHost, ShowInsert, TickerMessage } from '$lib/schema';
 import type { ShowStatus } from '$lib/utils/shows';
@@ -11,16 +12,10 @@ interface AdminMutationOptions {
 	showId: string;
 }
 
-interface CreateShowHostOption {
-	id: string;
-	avatarUrl?: string | null;
-	displayName: string;
-}
-
 interface CreateShowOptions {
 	createdById: string;
 	db: Db;
-	hosts: readonly CreateShowHostOption[];
+	hosts: readonly ShowHostOption[];
 	isAdmin: boolean;
 	startsAt: Date;
 	status: ShowStatus;
@@ -41,6 +36,12 @@ interface UpdateShowHostLowerThirdTitleOptions extends AdminMutationOptions {
 
 interface BroadcastLowerThirdOptions extends AdminMutationOptions {
 	host: ShowHost;
+}
+
+interface UpdateShowHostsOptions extends AdminMutationOptions {
+	activeLowerThirdShowHostId: string | null | undefined;
+	currentHosts: readonly ShowHost[];
+	hosts: readonly ShowHostOption[];
 }
 
 interface AddTickerMessageOptions extends AdminMutationOptions {
@@ -168,6 +169,66 @@ export async function broadcastLowerThird({
 			activeLowerThirdShowHostId: host.id
 		})
 		.wait({ tier: 'global' });
+}
+
+export async function updateShowHosts({
+	activeLowerThirdShowHostId,
+	currentHosts,
+	db,
+	hosts,
+	isAdmin,
+	showId
+}: UpdateShowHostsOptions): Promise<void> {
+	assertAdmin(isAdmin);
+
+	if (currentHosts.some((host) => host.showId !== showId)) {
+		throw new Error('Host does not belong to show');
+	}
+
+	const nextHostIds = new Set(hosts.map((host) => host.id));
+	const currentHostsByHostId = new Map(currentHosts.map((host) => [host.hostId, host]));
+	const removedHosts = currentHosts.filter((host) => !nextHostIds.has(host.hostId));
+
+	if (
+		activeLowerThirdShowHostId &&
+		removedHosts.some((host) => host.id === activeLowerThirdShowHostId)
+	) {
+		await db
+			.update(app.shows, showId, {
+				activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
+			})
+			.wait({ tier: 'global' });
+	}
+
+	await Promise.all(
+		hosts.map((host, position) => {
+			const currentHost = currentHostsByHostId.get(host.id);
+
+			if (currentHost) {
+				return db
+					.update(app.showHosts, currentHost.id, {
+						displayName: host.displayName,
+						avatarUrl: host.avatarUrl ?? null,
+						position
+					})
+					.wait({ tier: 'global' });
+			}
+
+			return db
+				.insert(app.showHosts, {
+					showId,
+					hostId: host.id,
+					displayName: host.displayName,
+					avatarUrl: host.avatarUrl ?? null,
+					position
+				})
+				.wait({ tier: 'global' });
+		})
+	);
+
+	await Promise.all(
+		removedHosts.map((host) => db.delete(app.showHosts, host.id).wait({ tier: 'global' }))
+	);
 }
 export async function clearLowerThird({
 	db,

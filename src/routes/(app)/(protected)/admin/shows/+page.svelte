@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
+	import type { PageData } from './$types';
 
 	import { createShow, deleteShow } from '$lib/components/shows/show-actions';
 	import {
@@ -14,21 +15,21 @@
 	import type { ShowStatus } from '$lib/utils/shows';
 	import { app } from '$lib/schema';
 
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
+
 	const db = getDb();
 	const session = getSession();
 
-	// TOD Should this be just admins?
-	const allAppUsers = new QuerySubscription(app.appUsers.where({}), { tier: 'global' });
 	const shows = new QuerySubscription(app.shows.where({}), { tier: 'global' });
 
 	const sortedShows = $derived([...(shows.current ?? [])].sort(compareShowsByRecency));
-	const hostOptions = $derived(
-		[...(allAppUsers.current ?? [])].sort((first, second) =>
-			first.displayName.localeCompare(second.displayName)
-		)
-	);
+	const hostOptions = $derived(data.adminHostOptions);
 	const user = $derived(session?.claims);
-	const isAdmin = $derived(user?.isAdmin);
+	const isAdmin = $derived(user?.isAdmin === true);
 	const defaultShowDate = formatShowDateInput(new Date());
 
 	let deleteError = $state<string | null>(null);
@@ -41,6 +42,11 @@
 
 		if (!user || !isAdmin) {
 			formError = 'Admin access required';
+			return;
+		}
+
+		if (!data.currentAppUserId) {
+			formError = 'Current admin profile required';
 			return;
 		}
 
@@ -86,7 +92,7 @@
 
 		try {
 			const show = await createShow({
-				createdById: user.id,
+				createdById: data.currentAppUserId,
 				db,
 				hosts: hostIds.flatMap((hostId) => {
 					const host = hostOptions.find((option) => option.id === hostId);
@@ -176,11 +182,7 @@
 				<button disabled={isCreating} type="submit">Create</button>
 			</div>
 
-			{#if allAppUsers.loading}
-				<p class="status" data-state="connecting">Loading hosts</p>
-			{:else if allAppUsers.error}
-				<p class="status" data-state="warning">{allAppUsers.error.message}</p>
-			{:else if hostOptions.length}
+			{#if hostOptions.length}
 				<fieldset>
 					<legend>Hosts</legend>
 					{#each hostOptions as host (host.id)}
