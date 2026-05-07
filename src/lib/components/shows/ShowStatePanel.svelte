@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { getDb, getSession } from 'jazz-tools/svelte';
-
 	import {
+		assertAdmin,
 		updateAudienceSubmissionGate,
 		updateShowStatus
 	} from '$lib/components/shows/show-actions';
 	import { formatShowDate, parseShowStatus, SHOW_STATUSES } from '$lib/utils/shows';
-	import type { Show } from '$lib/schema';
+	import { app, type Show } from '$lib/schema';
 
 	let {
 		show
@@ -17,12 +17,13 @@
 	const db = getDb();
 	const session = getSession();
 	const isAdmin = $derived(session?.claims.isAdmin) as boolean;
-	const showDate = $derived(formatShowDate(show?.startsAt ?? null));
 
 	let error = $state<string | null>(null);
 	let pendingControl = $state<'status' | 'submissions' | null>(null);
 
 	async function handleStatusChange(event: Event): Promise<void> {
+		assertAdmin(isAdmin);
+
 		const select = event.currentTarget;
 
 		if (!(select instanceof HTMLSelectElement)) {
@@ -34,12 +35,13 @@
 		error = null;
 
 		try {
-			await updateShowStatus({
-				db,
-				isAdmin,
-				showId: show.id,
-				status: parseShowStatus(select.value)
-			});
+			const status = parseShowStatus(select.value);
+			await db
+				.update(app.shows, show.id, {
+					status,
+					endedAt: status === 'ended' ? new Date() : null
+				})
+				.wait({ tier: 'global' });
 		} catch (caughtError) {
 			console.error('Unable to update show status', caughtError);
 			error = 'Unable to update show status';
@@ -78,7 +80,7 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">State</p>
 
-	<h2>{showDate}</h2>
+	<h2>{formatShowDate(show.startsAt)}</h2>
 
 	<div class="form-row">
 		<label class="field">

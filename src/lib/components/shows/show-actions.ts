@@ -1,11 +1,8 @@
 import type { Db } from 'jazz-tools';
-
 import type { ShowHostOption } from '$lib/components/shows/show-host-options';
 import { app } from '$lib/schema';
 import type { Show, ShowHost, ShowInsert, TickerMessage } from '$lib/schema';
 import type { ShowStatus } from '$lib/utils/shows';
-import { getNextTickerMessagePosition } from '$lib/utils/ticker-messages';
-import { getDb } from 'jazz-tools/svelte';
 
 interface AdminMutationOptions {
 	db: Db;
@@ -43,12 +40,6 @@ interface UpdateShowHostsOptions extends AdminMutationOptions {
 	activeLowerThirdShowHostId: string | null | undefined;
 	currentHosts: readonly ShowHost[];
 	hosts: readonly ShowHostOption[];
-}
-
-interface AddTickerMessageOptions extends AdminMutationOptions {
-	createdById: string;
-	messages: readonly TickerMessage[];
-	text: string;
 }
 
 interface DeleteTickerMessageOptions extends AdminMutationOptions {
@@ -177,10 +168,10 @@ export async function updateShowHosts({
 	currentHosts,
 	hosts,
 	isAdmin,
-	showId
+	showId,
+	db
 }: UpdateShowHostsOptions): Promise<void> {
 	assertAdmin(isAdmin);
-	const db = getDb();
 
 	if (currentHosts.some((host) => host.showId !== showId)) {
 		throw new Error('Host does not belong to show');
@@ -243,33 +234,6 @@ export async function clearLowerThird({
 	});
 
 	await handle.wait({ tier: 'global' });
-}
-
-export async function addTickerMessage({
-	createdById,
-	db,
-	isAdmin,
-	messages,
-	showId,
-	text
-}: AddTickerMessageOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	const trimmedText = text.trim();
-
-	if (!trimmedText) {
-		throw new TypeError('Ticker message required');
-	}
-
-	await db
-		.insert(app.tickerMessages, {
-			showId,
-			text: trimmedText,
-			position: getNextTickerMessagePosition(messages),
-			createdById,
-			createdAt: new Date()
-		})
-		.wait({ tier: 'global' });
 }
 
 export async function deleteTickerMessage({
@@ -415,7 +379,7 @@ export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions):
 	await db.delete(app.shows, showId).wait({ tier: 'global' });
 }
 
-function assertAdmin(isAdmin: boolean): void {
+export function assertAdmin(isAdmin: boolean): void {
 	if (!isAdmin) {
 		throw new Error('Admin access required');
 	}

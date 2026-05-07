@@ -1,27 +1,20 @@
 <script lang="ts">
 	import { getDb, getSession } from 'jazz-tools/svelte';
 
-	import { createTickerMessagesSubscription } from '$lib/components/shows/show-queries.svelte';
-	import { addTickerMessage, deleteTickerMessage } from '$lib/components/shows/show-actions';
-	import { compareTickerMessagesByPosition } from '$lib/utils/ticker-messages';
-	import type { Show } from '$lib/schema';
+	import { deleteTickerMessage } from '$lib/components/shows/show-actions';
+	import { app, type Show, type TickerMessage } from '$lib/schema';
 
 	let {
 		show
 	}: {
-		show: Show;
+		show: Show & {
+			tickerMessagesViaShow: TickerMessage[];
+		};
 	} = $props();
 
 	const db = getDb();
 	const session = getSession();
-
-	const messages = createTickerMessagesSubscription(() => show.id);
-
 	const isAdmin = $derived(session?.claims.isAdmin === true);
-	const sortedMessages = $derived(
-		[...(messages.current ?? [])].sort(compareTickerMessagesByPosition)
-	);
-
 	let draftMessage = $state('');
 	let pendingActionId = $state<string | null>(null);
 	let error = $state<string | null>(null);
@@ -46,14 +39,20 @@
 		error = null;
 
 		try {
-			await addTickerMessage({
-				createdById: session.user_id,
-				db,
-				isAdmin,
-				messages: sortedMessages,
+			const trimmedText = draftMessage.trim();
+
+			if (!trimmedText) {
+				throw new TypeError('Ticker message required');
+			}
+
+			db.insert(app.tickerMessages, {
 				showId: show.id,
-				text: draftMessage
+				text: trimmedText,
+				position: getNextTickerMessagePosition(show.tickerMessagesViaShow),
+				createdById: session?.user_id,
+				createdAt: new Date()
 			});
+
 			draftMessage = '';
 		} catch (caughtError) {
 			console.error('Unable to add ticker message', caughtError);
@@ -61,6 +60,10 @@
 		} finally {
 			pendingActionId = null;
 		}
+	}
+
+	function getNextTickerMessagePosition(messages: readonly TickerMessage[]): number {
+		return messages.reduce((position, message) => Math.max(position, message.position + 1), 0);
 	}
 
 	async function handleDeleteMessage(event: Event): Promise<void> {
@@ -76,7 +79,9 @@
 			return;
 		}
 
-		const message = sortedMessages.find((candidate) => candidate.id === button.dataset.messageId);
+		const message = show.tickerMessagesViaShow.find(
+			(candidate) => candidate.id === button.dataset.messageId
+		);
 
 		if (!message) {
 			error = 'Ticker message not found';
@@ -105,49 +110,47 @@
 <section class="surface" data-depth="medium">
 	<p class="section-label">Ticker</p>
 
-	{#if messages.loading}{:else}
-		<form class="ticker-message-form" autocomplete="off" onsubmit={handleAddMessage}>
-			<label class="field">
-				Message
-				<input
-					disabled={pendingActionId === 'add'}
-					maxlength="240"
-					placeholder="New ticker message"
-					value={draftMessage}
-					oninput={handleDraftMessageInput}
-				/>
-			</label>
+	<form class="ticker-message-form" autocomplete="off" onsubmit={handleAddMessage}>
+		<label class="field">
+			Message
+			<input
+				disabled={pendingActionId === 'add'}
+				maxlength="240"
+				placeholder="New ticker message"
+				value={draftMessage}
+				oninput={handleDraftMessageInput}
+			/>
+		</label>
 
-			<button
-				data-variant="primary"
-				disabled={pendingActionId === 'add' || !draftMessage.trim()}
-				type="submit"
-			>
-				Add
-			</button>
-		</form>
+		<button
+			data-variant="primary"
+			disabled={pendingActionId === 'add' || !draftMessage.trim()}
+			type="submit"
+		>
+			Add
+		</button>
+	</form>
 
-		{#if sortedMessages.length}
-			<ul class="ticker-message-list">
-				{#each sortedMessages as message, index (message.id)}
-					<li>
-						<span class="ticker-message-list__index">{String(index + 1).padStart(2, '0')}</span>
-						<span>{message.text}</span>
-						<button
-							data-message-id={message.id}
-							data-variant="danger"
-							disabled={pendingActionId === message.id}
-							type="button"
-							onclick={handleDeleteMessage}
-						>
-							Remove
-						</button>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<h3>No ticker messages</h3>
-		{/if}
+	{#if show.tickerMessagesViaShow.length}
+		<ul class="ticker-message-list">
+			{#each show.tickerMessagesViaShow as message, index (message.id)}
+				<li>
+					<span class="ticker-message-list__index">{String(index + 1).padStart(2, '0')}</span>
+					<span>{message.text}</span>
+					<button
+						data-message-id={message.id}
+						data-variant="danger"
+						disabled={pendingActionId === message.id}
+						type="button"
+						onclick={handleDeleteMessage}
+					>
+						Remove
+					</button>
+				</li>
+			{/each}
+		</ul>
+	{:else}
+		<h3>No ticker messages</h3>
 	{/if}
 
 	{#if error}

@@ -9,9 +9,10 @@
 				status: 'live'
 			})
 			.orderBy('startsAt', 'desc')
+			.include({ tickerMessagesViaShow: app.tickerMessages.where({}).orderBy('position', 'asc') })
 	);
 </script>
 
 {#if shows.current?.[0]}
-	<TickerOverlay showId={shows.current[0].id} />
+	<TickerOverlay show={shows.current?.[0]} />
 {/if}

@@ -13,10 +13,6 @@ export function compareTickerMessagesByPosition(
 	);
 }
 
-export function getNextTickerMessagePosition(messages: readonly TickerMessage[]): number {
-	return messages.reduce((position, message) => Math.max(position, message.position + 1), 0);
-}
-
 export function getTickerLoopMessages(messages: readonly TickerMessage[]): TickerMessage[] {
 	const sortedMessages = [...messages].sort(compareTickerMessagesByPosition);
 
