@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Show, TickerMessage } from '$lib/schema';
 	import { getTickerLoopMessages } from '$lib/utils/ticker-messages';
+	import { flip } from 'svelte/animate';
 
 	interface Props {
 		show: Show & {
@@ -23,8 +24,10 @@
 			<div class="ticker__content">
 				<span class="ticker__block">
 					{#each loopMessages as message, index (`primary-${message.id}-${index}`)}
-						<span class="ticker__item">{message.text}</span>
-						<span class="ticker__separator">◆</span>
+						<div animate:flip>
+							<span class="ticker__item">{message.text}</span>
+							<span class="ticker__separator">◆</span>
+						</div>
 					{/each}
 				</span>
 
