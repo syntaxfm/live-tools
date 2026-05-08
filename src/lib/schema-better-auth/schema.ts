@@ -9,7 +9,9 @@ export const schema = {
 		createdAt: s.timestamp(),
 		updatedAt: s.timestamp(),
 		githubUserId: s.string().optional(),
-		githubUsername: s.string().optional()
+		githubUsername: s.string().optional(),
+		banned: s.boolean().default(false),
+		roles: s.array(s.enum('viewer', 'admin', 'host')).default(['viewer'])
 	}),
 
 	better_auth_session: s.table({

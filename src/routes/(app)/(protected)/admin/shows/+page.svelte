@@ -26,8 +26,9 @@
 
 	const shows = new QuerySubscription(app.shows.where({}));
 
-	const all_users = new QuerySubscription(app.appUsers.where({}));
+	const all_users = new QuerySubscription(app.better_auth_user.where({}));
 
+	$inspect(all_users.current);
 	const admins = $derived(
 		all_users?.current
 			? all_users.current.filter((user) =>
