@@ -51,9 +51,9 @@
 - Client-side session data should come from Jazz APIs such as `getJazzContext().session` or `getSession()`.
 - Current app-user profile data should come from Jazz `appUsers` queries, matching `externalUserId` to the Jazz session `user_id`.
 - Admin access is not stored in `appUsers`. Do not add DB-backed role fields or gate admin UI/Jazz permissions from mutable app-user data.
-- Admin status comes from `ADMIN_GITHUB_USER_IDS`. The server maps the signed-in GitHub OAuth profile to `githubUserId`/`githubUsername`, then writes `claims.githubUserId`, `claims.githubUsername`, and `claims.isAdmin` into the Better Auth JWT.
-- Jazz permissions should enforce admin access with the Jazz session claim, e.g. `session.where({ 'claims.isAdmin': true })`.
-- UI labels may display `admin` or `viewer` from `getJazzContext().session?.claims.isAdmin`, but the authoritative check remains the signed Jazz session claim.
+- Admin status comes from `ADMIN_GITHUB_USER_IDS`. The server maps the signed-in GitHub OAuth profile to `githubUserId`/`githubUsername`, then writes `claims.githubUserId`, `claims.githubUsername`, and `claims.is_admin` into the Better Auth JWT.
+- Jazz permissions should enforce admin access with the Jazz session claim, e.g. `session.where({ 'claims.is_admin': true })`.
+- UI labels may display `admin` or `viewer` from `getJazzContext().session?.claims.is_admin`, but the authoritative check remains the signed Jazz session claim.
 - `appUsers` is profile/application identity data only: `externalUserId`, `githubUsername`, display name, avatar, and ban state. It is not the role source of truth.
 - When debugging a user showing as non-admin, check the JWT/Jazz session claims first, then whether the GitHub numeric id matches `ADMIN_GITHUB_USER_IDS`.
 

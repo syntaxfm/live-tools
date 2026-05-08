@@ -19,6 +19,6 @@
 </script>
 
 {#if shows.current?.[0]}
-	<AudienceSubmissionPanel {show} />
-	<ApprovedSubmissionsList {show} />
+	<AudienceSubmissionPanel show={shows.current?.[0]} />
+	<ApprovedSubmissionsList showId={shows.current?.[0].id} />
 {/if}

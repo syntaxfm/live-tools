@@ -80,7 +80,7 @@ type AppSchema = s.Schema<typeof schema>;
 
 export const app: s.App<AppSchema> = s.defineApp(schema);
 
-export type AppUser = s.RowOf<typeof app.better_auth_user>;
+export type User = s.RowOf<typeof app.better_auth_user>;
 export type Show = s.RowOf<typeof app.shows>;
 export type ShowHost = s.RowOf<typeof app.showHosts>;
 export type TickerMessage = s.RowOf<typeof app.tickerMessages>;

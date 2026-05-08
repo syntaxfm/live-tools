@@ -2,7 +2,7 @@
 	import { app } from '$lib/schema';
 	import { QuerySubscription } from 'jazz-tools/svelte';
 
-	const users = new QuerySubscription(app.appUsers.where({}));
+	const users = new QuerySubscription(app.better_auth_user.where({}));
 </script>
 
 <table>
@@ -18,7 +18,7 @@
 			<tr>
 				<td>{user.id}</td>
 				<td>{user.githubUsername}</td>
-				<td>{user.displayName}</td>
+				<td>{user.name}</td>
 			</tr>
 		{/each}
 	</tbody>

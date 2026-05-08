@@ -6,12 +6,12 @@
 	let { children } = $props();
 
 	const session = getSession();
-	const isAdmin = $derived(session?.claims.isAdmin);
+	const is_admin = $derived(session?.claims.is_admin);
 	const pathname = $derived(page.url.pathname);
 </script>
 
 <div class="app-shell">
-	{#if isAdmin}
+	{#if is_admin}
 		<header class="app-header">
 			<nav class="tabs" aria-label="Primary">
 				<a class:active={pathname === '/admin'} class="tab" href={resolve('/admin')}>Live Show</a>

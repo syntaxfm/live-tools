@@ -7,7 +7,6 @@ export function compareTickerMessagesByPosition(
 	second: TickerMessage
 ): number {
 	return (
-		first.position - second.position ||
 		new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime() ||
 		first.id.localeCompare(second.id)
 	);

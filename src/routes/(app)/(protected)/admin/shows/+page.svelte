@@ -2,11 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
-	import type { PageData } from './$types';
-
 	import { createShow, deleteShow } from '$lib/components/shows/show-actions';
 	import {
-		compareShowsByRecency,
 		formatShowDate,
 		formatShowDateInput,
 		parseShowDateInput,
@@ -15,32 +12,14 @@
 	import type { ShowStatus } from '$lib/utils/shows';
 	import { app } from '$lib/schema';
 
-	interface Props {
-		data: PageData;
-	}
-
-	let { data }: Props = $props();
-
 	const db = getDb();
 	const session = getSession();
 
 	const shows = new QuerySubscription(app.shows.where({}));
-
-	const all_users = new QuerySubscription(app.better_auth_user.where({}));
-
-	$inspect(all_users.current);
-	const admins = $derived(
-		all_users?.current
-			? all_users.current.filter((user) =>
-					['stolinski', 'wesbos', 'w3cj', 'randyrektor'].includes(user.githubUsername ?? '')
-				)
-			: []
-	);
-
-	$inspect(admins);
+	const hosts = new QuerySubscription(app.better_auth_user.where({ roles: { contains: 'host' } }));
 
 	const user = $derived(session?.claims);
-	const isAdmin = $derived(user?.isAdmin === true);
+	const is_admin = $derived(user?.is_admin === true);
 	const defaultShowDate = formatShowDateInput(new Date());
 
 	let deleteError = $state<string | null>(null);
@@ -51,7 +30,7 @@
 	async function handleCreateShow(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!user || !isAdmin) {
+		if (!session || !is_admin) {
 			formError = 'Admin access required';
 			return;
 		}
@@ -97,13 +76,13 @@
 
 		try {
 			const show = await createShow({
-				createdById: data.currentAppUserId,
+				createdById: session.user_id,
 				db,
 				hosts: hostIds.flatMap((hostId) => {
-					const host = hostOptions.find((option) => option.id === hostId);
+					const host = hosts?.current?.find((option) => option.id === hostId);
 					return host ? [host] : [];
 				}),
-				isAdmin,
+				is_admin,
 				startsAt,
 				status
 			});
@@ -120,7 +99,7 @@
 	async function handleDeleteShow(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!isAdmin) {
+		if (!is_admin) {
 			deleteError = 'Admin access required';
 			return;
 		}
@@ -151,7 +130,7 @@
 		try {
 			await deleteShow({
 				db,
-				isAdmin,
+				is_admin,
 				showId
 			});
 		} catch (error) {
@@ -167,7 +146,7 @@
 	<p class="section-label">Admin</p>
 	<h1>Manage shows</h1>
 
-	{#if user && isAdmin}
+	{#if is_admin}
 		<form onsubmit={handleCreateShow}>
 			<div class="form-row">
 				<label class="field">
@@ -189,10 +168,10 @@
 
 			<fieldset>
 				<legend>Hosts</legend>
-				{#each admins as host (host.id)}
+				{#each hosts.current as host (host.id)}
 					<label class="checkbox-field">
 						<input checked name="hostIds" type="checkbox" value={host.id} />
-						{host.displayName}
+						{host.name}
 					</label>
 				{/each}
 			</fieldset>
@@ -206,17 +185,15 @@
 	{/if}
 </section>
 
-{#if user && isAdmin}
+{#if user && is_admin}
 	<section class="surface" data-depth="medium">
 		<p class="section-label">Shows</p>
 
-		{#if shows.loading}
-			<h2>Loading</h2>
-		{:else if shows.error}
+		{#if shows.error}
 			<h2>{shows.error.message}</h2>
-		{:else if sortedShows.length}
+		{:else if shows?.current?.length}
 			<ul>
-				{#each sortedShows as show (show.id)}
+				{#each shows?.current as show (show.id)}
 					<li>
 						<p>
 							<a href={resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`)}

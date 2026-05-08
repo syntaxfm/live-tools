@@ -1,20 +1,19 @@
 import type { Db } from 'jazz-tools';
-import type { ShowHostOption } from '$lib/components/shows/show-host-options';
 import { app } from '$lib/schema';
-import type { Show, ShowHost } from '$lib/schema';
+import type { Show, User } from '$lib/schema';
 import type { ShowStatus } from '$lib/utils/shows';
 
 interface AdminMutationOptions {
 	db: Db;
-	isAdmin: boolean;
+	is_admin: boolean;
 	showId: string;
 }
 
 interface CreateShowOptions {
 	createdById: string;
 	db: Db;
-	hosts: readonly ShowHostOption[];
-	isAdmin: boolean;
+	hosts: readonly User[];
+	is_admin: boolean;
 	startsAt: Date;
 	status: ShowStatus;
 }
@@ -23,28 +22,15 @@ interface UpdateAudienceSubmissionGateOptions extends AdminMutationOptions {
 	isOpen: boolean;
 }
 
-interface UpdateShowHostLowerThirdTitleOptions extends AdminMutationOptions {
-	host: ShowHost;
-	title: string;
-}
-
-interface BroadcastLowerThirdOptions extends AdminMutationOptions {
-	host: ShowHost;
-}
-
-// Jazz currently persists this ref reliably when it is a UUID, but clearing it to null
-// can settle globally and then materialize back to the previous host id.
-const HIDDEN_LOWER_THIRD_SHOW_HOST_ID = '00000000-0000-4000-8000-000000000001';
-
 export async function createShow({
 	createdById,
 	db,
 	hosts,
-	isAdmin,
+	is_admin,
 	startsAt,
 	status
 }: CreateShowOptions): Promise<Show> {
-	assertAdmin(isAdmin);
+	assertAdmin(is_admin);
 
 	const show = await db
 		.insert(app.shows, {
@@ -57,14 +43,12 @@ export async function createShow({
 		.wait({ tier: 'global' });
 
 	await Promise.all(
-		hosts.map((host, position) =>
+		hosts.map((host) =>
 			db
 				.insert(app.showHosts, {
 					showId: show.id,
 					hostId: host.id,
-					displayName: host.displayName,
-					avatarUrl: host.avatarUrl ?? null,
-					position
+					displayName: host.name
 				})
 				.wait({ tier: 'global' })
 		)
@@ -75,11 +59,11 @@ export async function createShow({
 
 export async function updateAudienceSubmissionGate({
 	db,
-	isAdmin,
+	is_admin,
 	isOpen,
 	showId
 }: UpdateAudienceSubmissionGateOptions): Promise<void> {
-	assertAdmin(isAdmin);
+	assertAdmin(is_admin);
 
 	await db
 		.update(app.shows, showId, {
@@ -88,95 +72,17 @@ export async function updateAudienceSubmissionGate({
 		.wait({ tier: 'global' });
 }
 
-export async function updateShowHostLowerThirdTitle({
-	db,
-	host,
-	isAdmin,
-	showId,
-	title
-}: UpdateShowHostLowerThirdTitleOptions): Promise<void> {
-	assertAdmin(isAdmin);
+export async function deleteShow({ db, is_admin, showId }: AdminMutationOptions): Promise<void> {
+	assertAdmin(is_admin);
 
-	if (host.showId !== showId) {
-		throw new Error('Host does not belong to show');
-	}
-
-	await db
-		.update(app.showHosts, host.id, {
-			lowerThirdTitle: title.trim() || null
-		})
-		.wait({ tier: 'global' });
-}
-
-export async function broadcastLowerThird({
-	db,
-	host,
-	isAdmin,
-	showId
-}: BroadcastLowerThirdOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	if (host.showId !== showId) {
-		throw new Error('Host does not belong to show');
-	}
-
-	await db
-		.update(app.shows, showId, {
-			activeLowerThirdShowHostId: host.id
-		})
-		.wait({ tier: 'global' });
-}
-
-export async function clearLowerThird({
-	db,
-	isAdmin,
-	showId
-}: AdminMutationOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	const handle = db.update(app.shows, showId, {
-		activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
-	});
-
-	await handle.wait({ tier: 'global' });
-}
-
-export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions): Promise<void> {
-	assertAdmin(isAdmin);
-
-	const [
-		audienceSubmissions,
-		featuredSubmissionOverlays,
-		feudAnswers,
-		feudBoardSlots,
-		feudBuckets,
-		feudQuestions,
-		feudStrikes,
-		hostLinks,
-		showHosts,
-		submissionVotes,
-		tickerMessages,
-		toolCandidates,
-		toolPollResults,
-		toolPolls,
-		toolVotes
-	] = await Promise.all([
-		db.all(app.audienceSubmissions.where({ showId }), { tier: 'global' }),
-		db.all(app.featuredSubmissionOverlays.where({ showId }), { tier: 'global' }),
-		db.all(app.feudAnswers.where({ showId }), { tier: 'global' }),
-		db.all(app.feudBoardSlots.where({ showId }), { tier: 'global' }),
-		db.all(app.feudBuckets.where({ showId }), { tier: 'global' }),
-		db.all(app.feudQuestions.where({ showId }), { tier: 'global' }),
-		db.all(app.feudStrikes.where({ showId }), { tier: 'global' }),
-		db.all(app.hostLinks.where({ showId }), { tier: 'global' }),
-		db.all(app.showHosts.where({ showId }), { tier: 'global' }),
-		db.all(app.submissionVotes.where({ showId }), { tier: 'global' }),
-		db.all(app.tickerMessages.where({ showId }), { tier: 'global' }),
-		db.all(app.toolCandidates.where({ showId }), { tier: 'global' }),
-		db.all(app.toolPollResults.where({ showId }), { tier: 'global' }),
-		db.all(app.toolPolls.where({ showId }), { tier: 'global' }),
-		db.all(app.toolVotes.where({ showId }), { tier: 'global' })
-	]);
+	const [audienceSubmissions, hostLinks, showHosts, submissionVotes, tickerMessages] =
+		await Promise.all([
+			db.all(app.audienceSubmissions.where({ showId }), { tier: 'global' }),
+			db.all(app.hostLinks.where({ showId }), { tier: 'global' }),
+			db.all(app.showHosts.where({ showId }), { tier: 'global' }),
+			db.all(app.submissionVotes.where({ showId }), { tier: 'global' }),
+			db.all(app.tickerMessages.where({ showId }), { tier: 'global' })
+		]);
 
 	await db
 		.update(app.shows, showId, {
@@ -185,65 +91,7 @@ export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions):
 		.wait({ tier: 'global' });
 
 	await Promise.all(
-		feudBuckets.map((bucket) =>
-			db
-				.update(app.feudBuckets, bucket.id, {
-					mergedIntoBucketId: null
-				})
-				.wait({ tier: 'global' })
-		)
-	);
-
-	await Promise.all(
 		submissionVotes.map((vote) => db.delete(app.submissionVotes, vote.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		featuredSubmissionOverlays.map((overlay) =>
-			db.delete(app.featuredSubmissionOverlays, overlay.id).wait({ tier: 'global' })
-		)
-	);
-
-	await Promise.all(
-		toolVotes.map((vote) => db.delete(app.toolVotes, vote.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		toolPollResults.map((result) =>
-			db.delete(app.toolPollResults, result.id).wait({ tier: 'global' })
-		)
-	);
-
-	await Promise.all(
-		toolPolls.map((poll) => db.delete(app.toolPolls, poll.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		feudAnswers.map((answer) => db.delete(app.feudAnswers, answer.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		feudBoardSlots.map((slot) => db.delete(app.feudBoardSlots, slot.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		feudStrikes.map((strike) => db.delete(app.feudStrikes, strike.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		feudBuckets.map((bucket) => db.delete(app.feudBuckets, bucket.id).wait({ tier: 'global' }))
-	);
-
-	await Promise.all(
-		feudQuestions.map((question) =>
-			db.delete(app.feudQuestions, question.id).wait({ tier: 'global' })
-		)
-	);
-
-	await Promise.all(
-		toolCandidates.map((candidate) =>
-			db.delete(app.toolCandidates, candidate.id).wait({ tier: 'global' })
-		)
 	);
 
 	await Promise.all(
@@ -269,8 +117,8 @@ export async function deleteShow({ db, isAdmin, showId }: AdminMutationOptions):
 	await db.delete(app.shows, showId).wait({ tier: 'global' });
 }
 
-export function assertAdmin(isAdmin: boolean): void {
-	if (!isAdmin) {
+export function assertAdmin(is_admin: boolean): void {
+	if (!is_admin) {
 		throw new Error('Admin access required');
 	}
 }

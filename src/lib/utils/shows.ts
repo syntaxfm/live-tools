@@ -57,10 +57,6 @@ export function compareShowsByRecency(
 	);
 }
 
-export function compareShowHostsByPosition(first: ShowHost, second: ShowHost): number {
-	return first.position - second.position || first.displayName.localeCompare(second.displayName);
-}
-
 export function getShowPath(surface: ShowRouteSurface, showId: string): string {
 	return `${SHOW_ROUTE_PREFIXES[surface]}/${showId}`;
 }

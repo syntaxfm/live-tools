@@ -35,6 +35,16 @@ export const auth = betterAuth({
 				type: 'string',
 				required: false,
 				input: false
+			},
+			banned: {
+				type: 'boolean',
+				required: false,
+				input: false
+			},
+			roles: {
+				type: 'string[]',
+				required: false,
+				input: false
 			}
 		}
 	},
@@ -48,9 +58,23 @@ export const auth = betterAuth({
 			overrideUserInfoOnSignIn: true,
 			mapProfileToUser: (profile) => {
 				console.log('profile', profile.login);
+				let roles = ['viewer'];
+				if (
+					isAdminGithubUser({
+						githubUsername: profile.login
+					})
+				) {
+					roles = [...roles, 'admin', 'host'];
+				}
+				console.log({
+					githubUsername: profile.login,
+					githubUserId: profile.id,
+					roles
+				});
 				return {
 					githubUsername: profile.login,
-					githubUserId: profile.id
+					githubUserId: profile.id,
+					roles
 				};
 			}
 		}
@@ -63,6 +87,7 @@ export const auth = betterAuth({
 			jwt: {
 				issuer: env.ORIGIN,
 				definePayload: async ({ user }) => {
+					console.log('user', user);
 					return {
 						claims: {
 							id: user.id,
@@ -70,9 +95,7 @@ export const auth = betterAuth({
 							email: user.email,
 							image: user.image ?? null,
 							githubUsername: user.githubUsername ?? null,
-							isAdmin: isAdminGithubUser({
-								githubUsername: user.githubUsername
-							})
+							is_admin: user.roles.includes('admin')
 						}
 					};
 				},

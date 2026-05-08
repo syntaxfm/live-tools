@@ -45,7 +45,6 @@
 			db.insert(app.tickerMessages, {
 				showId: show.id,
 				text: trimmedText,
-				position: getNextTickerMessagePosition(show.tickerMessagesViaShow),
 				createdById: session?.user_id,
 				createdAt: new Date()
 			});
@@ -57,10 +56,6 @@
 		} finally {
 			pendingActionId = null;
 		}
-	}
-
-	function getNextTickerMessagePosition(messages: readonly TickerMessage[]): number {
-		return messages.reduce((position, message) => Math.max(position, message.position + 1), 0);
 	}
 
 	async function handleDeleteMessage(event: Event): Promise<void> {

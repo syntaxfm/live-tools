@@ -13,35 +13,25 @@
 
 	const db = getDb();
 	const session = getSession();
-	const showHosts = $derived(show.showHostsViaShow);
-	const all_users = new QuerySubscription(app.appUsers.where({}));
-	const admins = $derived(
-		all_users?.current
-			? all_users.current.filter((user) =>
-					['stolinski', 'wesbos', 'w3cj', 'randyrektor'].includes(user.githubUsername ?? '')
-				)
-			: []
-	);
+	const active_hosts = $derived(show.showHostsViaShow);
+	const hosts = new QuerySubscription(app.better_auth_user.where({ roles: { contains: 'host' } }));
 
 	let isUpdating = $state(false);
 	let pendingHostIds = $state<readonly string[] | null>(null);
 
-	const selectedHostIds = $derived(pendingHostIds ?? showHosts.map((host) => host.hostId));
-	const isAdmin = $derived(session?.claims.isAdmin) as boolean;
+	const selectedHostIds = $derived(pendingHostIds ?? active_hosts.map((host) => host.hostId));
+	const is_admin = $derived(session?.claims.is_admin) as boolean;
 
 	async function handleHostChange(event: Event): Promise<void> {
-		assertAdmin(isAdmin);
+		assertAdmin(is_admin);
 		const input = event.currentTarget;
-
 		if (!(input instanceof HTMLInputElement) || !input.form) {
 			return;
 		}
 		const admin_id = input.value;
-
-		const currentHostsByHostId = new Map(showHosts.map((host) => [host.hostId, host]));
+		const currentHostsByHostId = new Map(active_hosts.map((host) => [host.hostId, host]));
 		const host = currentHostsByHostId.get(admin_id);
-
-		const admin = admins.find((a) => a.id === admin_id);
+		const admin = hosts?.current?.find((a) => a.id === admin_id);
 
 		if (host) {
 			db.delete(app.showHosts, host.id);
@@ -50,9 +40,7 @@
 				db.insert(app.showHosts, {
 					showId: show.id,
 					hostId: admin_id,
-					displayName: admin.displayName,
-					avatarUrl: admin.avatarUrl,
-					position: 0
+					displayName: admin.name
 				});
 			}
 		}
@@ -63,24 +51,20 @@
 	<p class="section-label">Hosts</p>
 
 	<form>
-		{#if admins.length}
-			<fieldset disabled={isUpdating}>
-				<legend>Admins</legend>
-				{#each admins as host (host?.id)}
-					<label class="checkbox-field">
-						<input
-							checked={selectedHostIds.includes(host.id)}
-							name="hostIds"
-							type="checkbox"
-							value={host?.id}
-							onchange={handleHostChange}
-						/>
-						{host?.displayName}
-					</label>
-				{/each}
-			</fieldset>
-		{:else}
-			<h2>No admins</h2>
-		{/if}
+		<fieldset disabled={isUpdating}>
+			<legend>Hosts</legend>
+			{#each hosts.current as host (host?.id)}
+				<label class="checkbox-field">
+					<input
+						checked={selectedHostIds.includes(host.id)}
+						name="hostIds"
+						type="checkbox"
+						value={host?.id}
+						onchange={handleHostChange}
+					/>
+					{host?.name}
+				</label>
+			{/each}
+		</fieldset>
 	</form>
 </section>

@@ -24,16 +24,15 @@ interface SaveAudienceSubmissionOptions {
 }
 
 interface ModerateAudienceSubmissionOptions {
-	appUserId: string;
 	db: Db;
-	isAdmin: boolean;
+	is_admin: boolean;
 	status: AudienceSubmissionStatus;
 	submissionId: string;
 }
 
 interface FeatureAudienceSubmissionOptions {
 	db: Db;
-	isAdmin: boolean;
+	is_admin: boolean;
 	showId: string;
 	submission: AudienceSubmission;
 }
@@ -47,7 +46,7 @@ interface SetAudienceSubmissionVoteOptions {
 
 interface ClearFeaturedSubmissionOptions {
 	db: Db;
-	isAdmin: boolean;
+	is_admin: boolean;
 	showId: string;
 }
 
@@ -94,25 +93,20 @@ export async function saveAudienceSubmission({
 }
 
 export async function moderateAudienceSubmission({
-	appUserId,
 	db,
-	isAdmin,
+	is_admin,
 	status,
 	submissionId
 }: ModerateAudienceSubmissionOptions): Promise<void> {
-	assertAdmin(isAdmin);
+	assertAdmin(is_admin);
 
 	const updates: Partial<AudienceSubmissionInsert> =
 		status === 'approved'
 			? {
-					reviewedAt: new Date(),
-					reviewedById: appUserId,
 					status
 				}
 			: {
 					isFeatured: false,
-					reviewedAt: new Date(),
-					reviewedById: appUserId,
 					status
 				};
 
@@ -121,11 +115,11 @@ export async function moderateAudienceSubmission({
 
 export async function featureAudienceSubmission({
 	db,
-	isAdmin,
+	is_admin,
 	showId,
 	submission
 }: FeatureAudienceSubmissionOptions): Promise<void> {
-	assertAdmin(isAdmin);
+	assertAdmin(is_admin);
 
 	if (submission.status !== 'approved') {
 		throw new Error('Only approved submissions can be featured');
@@ -185,10 +179,10 @@ export async function setAudienceSubmissionVote({
 
 export async function clearFeaturedSubmission({
 	db,
-	isAdmin,
+	is_admin,
 	showId
 }: ClearFeaturedSubmissionOptions): Promise<void> {
-	assertAdmin(isAdmin);
+	assertAdmin(is_admin);
 
 	await unfeatureShowSubmissions(db, showId);
 }
@@ -213,8 +207,8 @@ async function unfeatureShowSubmissions(
 	);
 }
 
-function assertAdmin(isAdmin: boolean): void {
-	if (!isAdmin) {
+function assertAdmin(is_admin: boolean): void {
+	if (!is_admin) {
 		throw new Error('Admin access required');
 	}
 }

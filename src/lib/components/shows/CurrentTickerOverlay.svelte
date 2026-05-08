@@ -9,7 +9,7 @@
 				status: 'live'
 			})
 			.orderBy('startsAt', 'desc')
-			.include({ tickerMessagesViaShow: app.tickerMessages.where({}).orderBy('position', 'asc') })
+			.include({ tickerMessagesViaShow: app.tickerMessages.where({}) })
 	);
 </script>
 

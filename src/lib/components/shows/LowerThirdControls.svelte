@@ -1,14 +1,8 @@
 <script lang="ts">
-	import { getDb, getSession } from 'jazz-tools/svelte';
+	import { getDb } from 'jazz-tools/svelte';
 	import { onDestroy } from 'svelte';
-
-	import {
-		broadcastLowerThird,
-		clearLowerThird,
-		updateShowHostLowerThirdTitle
-	} from '$lib/components/shows/show-actions';
 	import { getLowerThirdTitle, LOWER_THIRD_DISPLAY_MS } from '$lib/utils/lower-thirds';
-	import type { Show, ShowHost } from '$lib/schema';
+	import { app, type Show, type ShowHost } from '$lib/schema';
 
 	let {
 		show
@@ -19,10 +13,9 @@
 	} = $props();
 
 	const db = getDb();
-	const session = getSession();
 	const hosts = $derived(show.showHostsViaShow);
-	const isAdmin = $derived(session?.claims.isAdmin === true);
 	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
+	const HIDDEN_LOWER_THIRD_SHOW_HOST_ID = '00000000-0000-4000-8000-000000000001';
 
 	let error = $state<string | null>(null);
 	let pendingHostId = $state<string | null>(null);
@@ -35,7 +28,6 @@
 
 	async function handleTitleChange(event: Event): Promise<void> {
 		const input = event.currentTarget;
-
 		if (!(input instanceof HTMLInputElement)) {
 			error = 'Invalid title control';
 			return;
@@ -51,47 +43,35 @@
 		pendingHostId = host.id;
 		error = null;
 
-		try {
-			await updateShowHostLowerThirdTitle({
-				db,
-				host,
-				isAdmin,
-				showId: show.id,
-				title: input.value
-			});
-		} catch (caughtError) {
-			console.error('Unable to update lower third title', caughtError);
-			error = 'Unable to update title';
-		} finally {
-			pendingHostId = null;
+		if (host.showId !== show.id) {
+			throw new Error('Host does not belong to show');
 		}
+		db.update(app.showHosts, host.id, {
+			lowerThirdTitle: input.value.trim() || null
+		});
+
+		pendingHostId = null;
 	}
 
-	async function handleBroadcast(event: Event): Promise<void> {
+	async function broadcast(event: Event): Promise<void> {
 		const button = event.currentTarget;
 
 		if (!(button instanceof HTMLButtonElement)) {
 			error = 'Invalid broadcast control';
 			return;
 		}
-
 		const host = hosts.find((candidate) => candidate.id === button.dataset.hostId);
-
 		if (!show.id || !host) {
 			error = 'Unable to broadcast';
 			return;
 		}
-
 		pendingHostId = host.id;
 		error = null;
 
 		try {
 			clearAutoHideTimer();
-			await broadcastLowerThird({
-				db,
-				host,
-				isAdmin,
-				showId: show.id
+			db.update(app.shows, show.id, {
+				activeLowerThirdShowHostId: host.id
 			});
 			scheduleAutoHide();
 		} catch (caughtError) {
@@ -102,42 +82,17 @@
 		}
 	}
 
-	async function handleClear(): Promise<void> {
+	async function clearLowerThird(): Promise<void> {
 		clearAutoHideTimer();
-		await clearActiveLowerThird(true);
-	}
-
-	async function clearActiveLowerThird(shouldShowPending: boolean): Promise<void> {
-		if (!show.id) {
-			error = 'Unable to hide lower third';
-			return;
-		}
-
-		if (shouldShowPending) {
-			isClearing = true;
-		}
-		error = null;
-
-		try {
-			await clearLowerThird({
-				db,
-				isAdmin,
-				showId: show.id
-			});
-		} catch (caughtError) {
-			console.error('Unable to hide lower third', caughtError);
-			error = 'Unable to hide lower third';
-		} finally {
-			if (shouldShowPending) {
-				isClearing = false;
-			}
-		}
+		db.update(app.shows, show.id, {
+			activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
+		});
 	}
 
 	function scheduleAutoHide(): void {
 		autoHideTimer = setTimeout(() => {
 			autoHideTimer = null;
-			void clearActiveLowerThird(false);
+			void clearLowerThird();
 		}, LOWER_THIRD_DISPLAY_MS);
 	}
 
@@ -170,13 +125,13 @@
 					</label>
 
 					{#if activeShowHostId === host.id}
-						<button disabled={isClearing} type="button" onclick={handleClear}>Hide</button>
+						<button disabled={isClearing} type="button" onclick={clearLowerThird}>Hide</button>
 					{:else}
 						<button
 							data-host-id={host.id}
 							disabled={pendingHostId === host.id}
 							type="button"
-							onclick={handleBroadcast}
+							onclick={broadcast}
 						>
 							Broadcast
 						</button>

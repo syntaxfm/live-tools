@@ -8,7 +8,7 @@
 	const db = getDb();
 	const session = getSession();
 	const user = $derived(session?.claims ?? null);
-	const roleLabel = $derived(user?.isAdmin === true ? 'admin' : 'viewer');
+	const roleLabel = $derived(user?.is_admin === true ? 'admin' : 'viewer');
 
 	let signOutError = $state<string | null>(null);
 	let isSigningOut = $state(false);

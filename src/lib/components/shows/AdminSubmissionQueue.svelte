@@ -25,7 +25,7 @@
 	);
 
 	const session = getSession();
-	const isAdmin = $derived(session?.claims.isAdmin === true);
+	const is_admin = $derived(session?.claims.is_admin === true);
 	const sortedSubmissions = $derived(
 		[...(submissions.current ?? [])].sort(compareAudienceSubmissionsByNewest)
 	);
@@ -52,7 +52,7 @@
 			await moderateAudienceSubmission({
 				appUserId: session.user_id,
 				db,
-				isAdmin,
+				is_admin,
 				status,
 				submissionId
 			});
@@ -83,7 +83,7 @@
 		try {
 			await featureAudienceSubmission({
 				db,
-				isAdmin,
+				is_admin,
 				showId: show.id,
 				submission
 			});
@@ -107,7 +107,7 @@
 		try {
 			await clearFeaturedSubmission({
 				db,
-				isAdmin,
+				is_admin,
 				showId: show.id
 			});
 		} catch (caughtError) {

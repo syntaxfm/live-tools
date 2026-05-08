@@ -12,13 +12,13 @@
 
 	const db = getDb();
 	const session = getSession();
-	const isAdmin = $derived(session?.claims.isAdmin) as boolean;
+	const is_admin = $derived(session?.claims.is_admin) as boolean;
 
 	let error = $state<string | null>(null);
 	let pendingControl = $state<'status' | 'submissions' | null>(null);
 
 	async function handleStatusChange(event: Event): Promise<void> {
-		assertAdmin(isAdmin);
+		assertAdmin(is_admin);
 
 		const select = event.currentTarget;
 
@@ -60,7 +60,7 @@
 		try {
 			await updateAudienceSubmissionGate({
 				db,
-				isAdmin,
+				is_admin,
 				isOpen: input.checked,
 				showId: show.id
 			});

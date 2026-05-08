@@ -14,6 +14,6 @@
 </script>
 
 {#if shows.current?.[0]}
-	<ShowStatePanel showId={shows.current[0].id} />
+	<ShowStatePanel show={shows.current[0]} />
 	<HostShow showId={shows.current[0].id} />
 {/if}

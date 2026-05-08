@@ -1,5 +1,4 @@
 import { env } from '$env/dynamic/private';
-
 import { app } from '$lib/schema';
 import { authJazzContext } from '$lib/server/auth-jazz-context';
 import { normalizeGithubUsername, parseGithubUsernameList } from '$lib/utils/github-usernames';

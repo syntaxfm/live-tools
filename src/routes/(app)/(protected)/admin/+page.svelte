@@ -15,16 +15,16 @@
 			})
 			.orderBy('startsAt', 'desc')
 			.include({
-				tickerMessagesViaShow: app.tickerMessages.where({}).orderBy('position', 'asc'),
+				tickerMessagesViaShow: app.tickerMessages.where({}).orderBy('createdAt', 'asc'),
 				showHostsViaShow: app.showHosts.where({})
 			})
 	);
 	const session = getSession();
-	const isAdmin = $derived(session?.claims.isAdmin);
+	const is_admin = $derived(session?.claims.is_admin);
 	const show = $derived(shows.current?.[0]);
 </script>
 
-{#if show && isAdmin}
+{#if show && is_admin}
 	<ShowStatePanel {show} />
 	<ShowHostsPanel {show} />
 	<LowerThirdControls {show} />
