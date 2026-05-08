@@ -68,26 +68,8 @@ export function getLatestAudienceSubmission(
 
 export function getSubmissionVoteCounts(votes: readonly SubmissionVote[]): Map<string, number> {
 	const voteCounts = new Map<string, number>();
-	const latestVotesBySubmissionId = new Map<string, Map<string, SubmissionVote>>();
 
-	for (const vote of votes) {
-		const submissionVotes =
-			latestVotesBySubmissionId.get(vote.submissionId) ?? new Map<string, SubmissionVote>();
-		const existingVote = submissionVotes.get(vote.voterId);
-
-		if (!existingVote || getVoteTime(vote) > getVoteTime(existingVote)) {
-			submissionVotes.set(vote.voterId, vote);
-		}
-
-		latestVotesBySubmissionId.set(vote.submissionId, submissionVotes);
-	}
-
-	for (const [submissionId, submissionVotes] of latestVotesBySubmissionId) {
-		for (const vote of submissionVotes.values()) {
-			voteCounts.set(submissionId, (voteCounts.get(submissionId) ?? 0) + vote.value);
-		}
-	}
-
+	// TODO votes need to just show based on how many exist per submission
 	return voteCounts;
 }
 

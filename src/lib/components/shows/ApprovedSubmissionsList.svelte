@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { setAudienceSubmissionVote } from '$lib/components/shows/submission-actions';
 	import {
 		createOwnShowSubmissionVotesSubscription,
 		createShowApprovedSubmissionsSubscription,
@@ -52,12 +51,7 @@
 		error = null;
 
 		try {
-			await setAudienceSubmissionVote({
-				appUserId: session.user_id,
-				isUpvoted: !existingVote || existingVote.value <= 0,
-				showId,
-				submission
-			});
+			// TODO Vote
 		} catch (caughtError) {
 			console.error('Unable to vote on audience submission', caughtError);
 			error = 'Unable to vote';
@@ -77,7 +71,6 @@
 			{#each approvedSubmissions as submission (submission.id)}
 				{@const voteCount = voteCounts.get(submission.id) ?? 0}
 				{@const ownVote = ownVotesBySubmissionId.get(submission.id)}
-				{@const isUpvoted = Boolean(ownVote && ownVote.value > 0)}
 				{@const canVote = Boolean(session?.user_id && submission.authorId !== session.user_id)}
 				<li>
 					<span class="badge" aria-label={`${voteCount} votes`}>{voteCount}</span>
@@ -88,13 +81,12 @@
 					<p class="inline-actions">
 						{#if canVote}
 							<button
-								aria-pressed={isUpvoted}
-								data-variant={isUpvoted ? 'primary' : undefined}
+								data-variant={ownVote ? 'primary' : undefined}
 								disabled={pendingVoteSubmissionId === submission.id}
 								type="button"
 								onclick={() => handleVote(submission)}
 							>
-								{isUpvoted ? 'Upvoted' : 'Upvote'}
+								{ownVote ? 'Upvoted' : 'Upvote'}
 							</button>
 						{/if}
 					</p>

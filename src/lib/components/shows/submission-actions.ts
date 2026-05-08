@@ -1,10 +1,8 @@
 import type { Db } from 'jazz-tools';
-
-import { resolve } from '$app/paths';
 import { app } from '$lib/schema';
 import type { AudienceSubmission, AudienceSubmissionInsert, Show } from '$lib/schema';
 import { canEditAudienceSubmission } from '$lib/utils/submissions';
-import type { AudienceSubmissionKind, AudienceSubmissionStatus } from '$lib/utils/submissions';
+import type { AudienceSubmissionKind } from '$lib/utils/submissions';
 
 const DEFAULT_AUDIENCE_SUBMISSION_KIND: AudienceSubmissionKind = 'tool';
 
@@ -23,23 +21,9 @@ interface SaveAudienceSubmissionOptions {
 	url: string;
 }
 
-interface ModerateAudienceSubmissionOptions {
-	db: Db;
-	is_admin: boolean;
-	status: AudienceSubmissionStatus;
-	submissionId: string;
-}
-
 interface FeatureAudienceSubmissionOptions {
 	db: Db;
 	is_admin: boolean;
-	showId: string;
-	submission: AudienceSubmission;
-}
-
-interface SetAudienceSubmissionVoteOptions {
-	appUserId: string | null;
-	isUpvoted: boolean;
 	showId: string;
 	submission: AudienceSubmission;
 }
@@ -92,27 +76,6 @@ export async function saveAudienceSubmission({
 	await db.insert(app.audienceSubmissions, insert).wait({ tier: 'global' });
 }
 
-export async function moderateAudienceSubmission({
-	db,
-	is_admin,
-	status,
-	submissionId
-}: ModerateAudienceSubmissionOptions): Promise<void> {
-	assertAdmin(is_admin);
-
-	const updates: Partial<AudienceSubmissionInsert> =
-		status === 'approved'
-			? {
-					status
-				}
-			: {
-					isFeatured: false,
-					status
-				};
-
-	await db.update(app.audienceSubmissions, submissionId, updates).wait({ tier: 'global' });
-}
-
 export async function featureAudienceSubmission({
 	db,
 	is_admin,
@@ -136,45 +99,6 @@ export async function featureAudienceSubmission({
 			isFeatured: true
 		})
 		.wait({ tier: 'global' });
-}
-
-export async function setAudienceSubmissionVote({
-	appUserId,
-	isUpvoted,
-	showId,
-	submission
-}: SetAudienceSubmissionVoteOptions): Promise<void> {
-	if (!appUserId) {
-		throw new Error('App user profile required');
-	}
-
-	if (submission.showId !== showId) {
-		throw new Error('Submission does not belong to show');
-	}
-
-	if (submission.status !== 'approved') {
-		throw new Error('Only approved submissions can be voted on');
-	}
-
-	if (submission.authorId === appUserId) {
-		throw new Error('Cannot vote on your own submission');
-	}
-
-	const response = await fetch(resolve('/api/submission-votes'), {
-		body: JSON.stringify({
-			isUpvoted,
-			showId,
-			submissionId: submission.id
-		}),
-		headers: {
-			'content-type': 'application/json'
-		},
-		method: 'POST'
-	});
-
-	if (!response.ok) {
-		throw new Error('Unable to vote');
-	}
 }
 
 export async function clearFeaturedSubmission({

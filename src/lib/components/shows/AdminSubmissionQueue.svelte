@@ -2,8 +2,7 @@
 	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
 	import {
 		clearFeaturedSubmission,
-		featureAudienceSubmission,
-		moderateAudienceSubmission
+		featureAudienceSubmission
 	} from '$lib/components/shows/submission-actions';
 	import { app, type Show } from '$lib/schema';
 	import {
@@ -49,13 +48,7 @@
 		error = null;
 
 		try {
-			await moderateAudienceSubmission({
-				appUserId: session.user_id,
-				db,
-				is_admin,
-				status,
-				submissionId
-			});
+			db.update(app.audienceSubmissions, submissionId, { status });
 		} catch (caughtError) {
 			console.error('Unable to moderate submission', caughtError);
 			error = 'Unable to moderate submission';
