@@ -1,25 +1,6 @@
 import type { Db } from 'jazz-tools';
 import { app } from '$lib/schema';
-import type { AudienceSubmission, AudienceSubmissionInsert, Show } from '$lib/schema';
-import { canEditAudienceSubmission } from '$lib/utils/submissions';
-import type { AudienceSubmissionKind } from '$lib/utils/submissions';
-
-const DEFAULT_AUDIENCE_SUBMISSION_KIND: AudienceSubmissionKind = 'tool';
-
-interface AudienceSubmissionFields {
-	kind: AudienceSubmissionKind;
-	title: string;
-	url: string;
-}
-
-interface SaveAudienceSubmissionOptions {
-	db: Db;
-	existingSubmission: AudienceSubmission | null;
-	externalUserId: string;
-	show: Show;
-	title: string | undefined;
-	url: string;
-}
+import type { AudienceSubmission } from '$lib/schema';
 
 interface FeatureAudienceSubmissionOptions {
 	db: Db;
@@ -32,48 +13,6 @@ interface ClearFeaturedSubmissionOptions {
 	db: Db;
 	is_admin: boolean;
 	showId: string;
-}
-
-export async function saveAudienceSubmission({
-	existingSubmission,
-	db,
-	externalUserId,
-	show,
-	title,
-	url
-}: SaveAudienceSubmissionOptions): Promise<void> {
-	if (!canEditAudienceSubmission(show)) {
-		throw new Error('Audience submissions are closed');
-	}
-
-	if (existingSubmission) {
-		throw new Error('Submission already exists');
-	}
-
-	const trimmedUrl = url.trim();
-
-	if (!trimmedUrl) {
-		throw new TypeError('Submission URL required');
-	}
-
-	const trimmedTitle = title?.trim() || trimmedUrl;
-
-	const fields: AudienceSubmissionFields = {
-		kind: DEFAULT_AUDIENCE_SUBMISSION_KIND,
-		title: trimmedTitle,
-		url: trimmedUrl
-	};
-
-	const insert: AudienceSubmissionInsert = {
-		...fields,
-		authorId: externalUserId,
-		createdAt: new Date(),
-		isFeatured: false,
-		showId: show.id,
-		status: 'pending'
-	};
-
-	await db.insert(app.audienceSubmissions, insert).wait({ tier: 'global' });
 }
 
 export async function featureAudienceSubmission({

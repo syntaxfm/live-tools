@@ -1,39 +1,35 @@
 <script lang="ts">
-	import { dev } from '$app/environment';
-	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
-
-	import { saveAudienceSubmission } from '$lib/components/shows/submission-actions';
+	import { getDb, getSession } from 'jazz-tools/svelte';
 	import { fetchPageTitle } from '$lib/utils/page-title';
-	import { canEditAudienceSubmission, getLatestAudienceSubmission } from '$lib/utils/submissions';
-	import { app, type Show } from '$lib/schema';
+	import { app, type AudienceSubmission, type Show } from '$lib/schema';
+	import SignIn from '../auth/SignIn.svelte';
 
-	let { show }: { show: Show } = $props();
+	let {
+		show
+	}: {
+		show: Show & {
+			audienceSubmissionsViaShow: AudienceSubmission[];
+		};
+	} = $props();
 
 	const db = getDb();
 	const session = getSession();
-
-	const ownSubmissions = new QuerySubscription(
-		() =>
-			show.id
-				? app.audienceSubmissions.where({ showId: show.id, authorId: session?.user_id })
-				: undefined,
-		{ tier: 'global' }
+	const own_submission = $derived(
+		show.audienceSubmissionsViaShow.find((sub) => sub.authorId === session?.user_id)
 	);
 
 	let status = $state<'idle' | 'submitting' | 'submitted'>('idle');
 	let error = $state<string | null>(null);
 	let isConfirming = $state(false);
 
-	const ownSubmission = $derived(getLatestAudienceSubmission(ownSubmissions.current ?? []));
-	const canEdit = $derived(canEditAudienceSubmission(show));
-	const isDevLocalFirst = $derived(dev && session?.authMode === 'local-first');
-	const hasSubmitted = $derived(Boolean(ownSubmission) || status === 'submitted');
-	const canSubmit = $derived(canEdit && (Boolean(session?.user_id) || isDevLocalFirst));
+	const can_edit = $derived(show.status === 'live' && show.audienceSubmissionsOpen);
+
+	const canSubmit = $derived(can_edit && Boolean(session?.user_id));
 
 	async function handleSubmit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!show || !canSubmit || hasSubmitted) {
+		if (!show || !canSubmit || own_submission) {
 			return;
 		}
 
@@ -43,11 +39,14 @@
 			error = 'Invalid submission form';
 			return;
 		}
+		if (!session?.user_id) {
+			throw new Error('Submission profile required');
+		}
 
 		const formData = new FormData(form);
 		const url = formData.get('url')?.toString() ?? '';
-
-		if (!url.trim()) {
+		const trimmed_url = url.trim();
+		if (!trimmed_url) {
 			return;
 		}
 
@@ -61,19 +60,16 @@
 		isConfirming = false;
 
 		try {
-			if (!session?.user_id) {
-				throw new Error('Submission profile required');
-			}
-
 			const title = await fetchPageTitle(url);
+			const trimmed_title = title?.trim();
 
-			await saveAudienceSubmission({
-				existingSubmission: ownSubmission,
-				externalUserId: session.user_id,
-				show,
-				title,
-				db,
-				url
+			db.insert(app.audienceSubmissions, {
+				title: trimmed_title,
+				url: trimmed_url,
+				kind: 'tool',
+				authorId: session.user_id,
+				createdAt: new Date(),
+				showId: show.id
 			});
 
 			status = 'submitted';
@@ -89,35 +85,40 @@
 	}
 </script>
 
-<section class="surface" data-depth="medium">
-	{#if ownSubmission}
-		<h3>{ownSubmission.title ?? ownSubmission.url}</h3>
-		<h4>{ownSubmission.url}</h4>
+{#if own_submission}
+	<section class="surface" data-depth="medium">
+		<h3>{own_submission.title ?? own_submission.url}</h3>
+		<h4>{own_submission.url}</h4>
 		<p>
-			<span class="badge">{ownSubmission.status}</span>
+			<span class="badge">{own_submission.status}</span>
 		</p>
-	{:else if canSubmit}
-		<form onchange={handleChange} onsubmit={handleSubmit}>
-			<label class="field">
-				URL
-				<input name="url" required type="url" />
-			</label>
+	</section>
+{:else if show.audienceSubmissionsOpen}
+	<section class="surface" data-depth="medium">
+		{#if session?.authMode === 'external'}
+			<form onchange={handleChange} onsubmit={handleSubmit}>
+				<label class="field">
+					URL
+					<input name="url" required type="url" />
+				</label>
 
-			<button
-				data-variant={isConfirming ? 'danger' : undefined}
-				disabled={status === 'submitting'}
-				type="submit"
-			>
-				{isConfirming ? 'Are you sure? Submit once' : 'Submit'}
-			</button>
-		</form>
-	{/if}
-
-	{#if status === 'submitting'}
-		<p class="status" data-state="connecting">Submitting</p>
-	{/if}
-
-	{#if error}
-		<p class="status" data-state="warning">{error}</p>
-	{/if}
-</section>
+				<button
+					data-variant={isConfirming ? 'danger' : 'primary'}
+					disabled={status === 'submitting'}
+					type="submit"
+				>
+					{isConfirming ? 'Are you sure? Submit once' : 'Submit'}
+				</button>
+			</form>
+			{#if error}
+				<p class="status" data-state="warning">{error}</p>
+			{/if}
+		{:else}
+			<SignIn />
+		{/if}
+	</section>
+{:else}
+	<section class="surface" data-depth="medium">
+		<p>Submissions are currently closed</p>
+	</section>
+{/if}

@@ -1,20 +1,13 @@
-import type { AudienceSubmission, Show, SubmissionVote } from '$lib/schema';
-import { canUseAudienceSubmissionGate } from '$lib/utils/shows';
+import type { AudienceSubmission, SubmissionVote } from '$lib/schema';
 
 export type AudienceSubmissionKind = AudienceSubmission['kind'];
 export type AudienceSubmissionStatus = AudienceSubmission['status'];
 
-const AUDIENCE_SUBMISSION_KINDS: readonly AudienceSubmissionKind[] = ['post', 'tool'];
 export const AUDIENCE_SUBMISSION_STATUSES: readonly AudienceSubmissionStatus[] = [
 	'pending',
 	'approved',
 	'rejected'
 ];
-
-interface AudienceSubmissionGateShow {
-	audienceSubmissionsOpen: Show['audienceSubmissionsOpen'];
-	status: Show['status'];
-}
 
 export interface ApprovedAudienceSubmissionsByKind {
 	posts: AudienceSubmission[];
@@ -24,10 +17,6 @@ export interface ApprovedAudienceSubmissionsByKind {
 export interface RankedAudienceSubmission {
 	submission: AudienceSubmission;
 	voteCount: number;
-}
-
-export function canEditAudienceSubmission(show: AudienceSubmissionGateShow | null): boolean {
-	return show ? canUseAudienceSubmissionGate(show) : false;
 }
 
 export function getAudienceSubmissionTitle(submission: AudienceSubmission): string {

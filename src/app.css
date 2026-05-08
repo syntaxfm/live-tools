@@ -315,6 +315,9 @@ label,
 	width: min(100% - 2rem, var(--page-max-width));
 	margin: 0 auto;
 	padding: 2rem 0;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
 }
 
 .brand-lockup {

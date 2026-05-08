@@ -14,8 +14,7 @@
 				audienceSubmissionsViaShow: app.audienceSubmissions.where({})
 			})
 	);
-
-	$inspect(shows);
+	$inspect(shows.current); 
 </script>
 
 {#if shows.current?.[0]}

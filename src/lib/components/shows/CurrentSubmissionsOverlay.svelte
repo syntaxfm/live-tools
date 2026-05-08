@@ -9,9 +9,12 @@
 				status: 'live'
 			})
 			.orderBy('startsAt', 'desc')
+			.include({
+				audienceSubmissionsViaShow: app.audienceSubmissions.where({})
+			})
 	);
 </script>
 
 {#if shows.current?.[0]}
-	<SubmissionsOverlay showId={shows.current[0].id} />
+	<SubmissionsOverlay show={shows.current[0]} />
 {/if}

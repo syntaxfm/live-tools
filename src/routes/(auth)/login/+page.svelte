@@ -1,25 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import SignIn from '$lib/components/auth/SignIn.svelte';
 	import { getSession } from 'jazz-tools/svelte';
-	import { authClient } from '$lib/auth-client';
 
 	const session = getSession();
 	const user = $derived(session?.claims ?? null);
 	const roleLabel = $derived(user?.is_admin ? 'admin' : 'viewer');
-	let signInError = $state<string | null>(null);
-
-	async function signInWithGitHub(): Promise<void> {
-		signInError = null;
-
-		const result = await authClient.signIn.social({
-			provider: 'github',
-			callbackURL: '/host'
-		});
-
-		if (result.error) {
-			signInError = result.error.message ?? 'Sign in failed';
-		}
-	}
 </script>
 
 <section class="surface" data-depth="medium">
@@ -34,10 +20,6 @@
 		{/if}
 	{:else}
 		<h1>Login</h1>
-		<button data-variant="primary" onclick={signInWithGitHub}>Sign in with GitHub</button>
-	{/if}
-
-	{#if signInError}
-		<p>{signInError}</p>
+		<SignIn />
 	{/if}
 </section>

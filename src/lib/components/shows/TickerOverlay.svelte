@@ -24,7 +24,7 @@
 			<div class="ticker__content">
 				<span class="ticker__block">
 					{#each loopMessages as message, index (`primary-${message.id}-${index}`)}
-						<div animate:flip>
+						<div animate:flip={{ duration: 200 }}>
 							<span class="ticker__item">{message.text}</span>
 							<span class="ticker__separator">◆</span>
 						</div>

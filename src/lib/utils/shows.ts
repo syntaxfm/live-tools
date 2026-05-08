@@ -5,22 +5,6 @@ export type ShowStatus = Show['status'];
 
 export const SHOW_STATUSES: readonly ShowStatus[] = ['draft', 'live', 'ended'];
 
-interface ShowActivityState {
-	status: ShowStatus;
-}
-
-interface AudienceSubmissionGateState extends ShowActivityState {
-	audienceSubmissionsOpen: boolean;
-}
-
-function isLiveShow(show: ShowActivityState): boolean {
-	return show.status === 'live';
-}
-
-export function canUseAudienceSubmissionGate(show: AudienceSubmissionGateState): boolean {
-	return isLiveShow(show) && show.audienceSubmissionsOpen;
-}
-
 export function parseShowStatus(value: string): ShowStatus {
 	if (SHOW_STATUSES.includes(value as ShowStatus)) {
 		return value as ShowStatus;
@@ -66,8 +50,4 @@ export function parseShowDateInput(value: string): Date {
 	}
 
 	return date;
-}
-
-function getShowTime(timestamp: Show['startsAt'] | Show['createdAt']): number {
-	return new Date(timestamp).getTime();
 }

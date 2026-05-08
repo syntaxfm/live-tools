@@ -94,7 +94,7 @@
 			{/each}
 		</ul>
 	{:else}
-		<h3>No approved submissions</h3>
+		<h3>Submissions incoming...</h3>
 	{/if}
 
 	{#if error}

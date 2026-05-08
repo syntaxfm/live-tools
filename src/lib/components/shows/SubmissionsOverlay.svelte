@@ -1,35 +1,31 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 
-	import {
-		createShowApprovedSubmissionsSubscription,
-		createShowSubmissionVotesSubscription
-	} from '$lib/components/shows/submission-queries.svelte';
+	import { createShowSubmissionVotesSubscription } from '$lib/components/shows/submission-queries.svelte';
 	import {
 		getAudienceSubmissionTitle,
 		getTopVotedAudienceSubmissions,
 		type RankedAudienceSubmission
 	} from '$lib/utils/submissions';
 	import { getViewTransitionName, updateWithViewTransition } from '$lib/utils/view-transitions';
-	import { QuerySubscription } from 'jazz-tools/svelte';
-	import { app } from '$lib/schema';
+
+	import { type AudienceSubmission, type Show } from '$lib/schema';
 
 	const SUBMISSIONS_OVERLAY_LIMIT = 4;
 
-	interface Props {
-		showId: string | undefined;
-	}
+	let {
+		show
+	}: {
+		show: Show & {
+			audienceSubmissionsViaShow: AudienceSubmission[];
+		};
+	} = $props();
+	const submissions = $derived(show.audienceSubmissionsViaShow);
 
-	let { showId }: Props = $props();
-
-	const submissions = new QuerySubscription(
-		() => (showId ? app.audienceSubmissions.where({ showId, status: 'approved' }) : undefined),
-		{ tier: 'global' }
-	);
-	const votes = createShowSubmissionVotesSubscription(() => showId);
+	const votes = createShowSubmissionVotesSubscription(() => show.id);
 	const rankedSubmissions = $derived(
 		getTopVotedAudienceSubmissions(
-			submissions.current ?? [],
+			submissions ?? [],
 			votes.current ?? [],
 			SUBMISSIONS_OVERLAY_LIMIT
 		)

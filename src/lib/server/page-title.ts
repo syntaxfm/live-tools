@@ -1,4 +1,4 @@
-const MAX_TITLE_HTML_LENGTH = 200_000;
+const MAX_TITLE_HTML_LENGTH = 1_000_000;
 
 export async function getPageTitle(url: string): Promise<string | undefined> {
 	const targetUrl = parseHttpUrl(url);

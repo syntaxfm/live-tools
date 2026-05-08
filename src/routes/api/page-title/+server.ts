@@ -1,7 +1,6 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-
 import { getPageTitle } from '$lib/server/page-title';
+import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const targetUrl = url.searchParams.get('url');

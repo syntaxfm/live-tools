@@ -57,7 +57,6 @@ export const auth = betterAuth({
 			clientSecret: env.GITHUB_CLIENT_SECRET,
 			overrideUserInfoOnSignIn: true,
 			mapProfileToUser: (profile) => {
-				console.log('profile', profile.login);
 				let roles = ['viewer'];
 				if (
 					isAdminGithubUser({
@@ -66,11 +65,6 @@ export const auth = betterAuth({
 				) {
 					roles = [...roles, 'admin', 'host'];
 				}
-				console.log({
-					githubUsername: profile.login,
-					githubUserId: profile.id,
-					roles
-				});
 				return {
 					githubUsername: profile.login,
 					githubUserId: profile.id,
@@ -87,7 +81,6 @@ export const auth = betterAuth({
 			jwt: {
 				issuer: env.ORIGIN,
 				definePayload: async ({ user }) => {
-					console.log('user', user);
 					return {
 						claims: {
 							id: user.id,
@@ -102,6 +95,6 @@ export const auth = betterAuth({
 				getSubject: ({ user }) => user.id
 			}
 		}),
-		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
+		sveltekitCookies(getRequestEvent)
 	]
 });

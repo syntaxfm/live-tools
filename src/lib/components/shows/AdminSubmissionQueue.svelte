@@ -110,6 +110,10 @@
 			pendingActionId = null;
 		}
 	}
+
+	function deleteSub(id: string) {
+		db.delete(app.audienceSubmissions, id);
+	}
 </script>
 
 <section class="surface" data-depth="medium">
@@ -138,6 +142,9 @@
 								{status}
 							</button>
 						{/each}
+						<button data-variant="danger" type="button" onclick={() => deleteSub(submission.id)}>
+							Delete
+						</button>
 
 						{#if submission.status === 'approved'}
 							<button
