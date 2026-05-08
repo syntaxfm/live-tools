@@ -4,7 +4,7 @@ import { canUseAudienceSubmissionGate } from '$lib/utils/shows';
 export type AudienceSubmissionKind = AudienceSubmission['kind'];
 export type AudienceSubmissionStatus = AudienceSubmission['status'];
 
-export const AUDIENCE_SUBMISSION_KINDS: readonly AudienceSubmissionKind[] = ['post', 'tool'];
+const AUDIENCE_SUBMISSION_KINDS: readonly AudienceSubmissionKind[] = ['post', 'tool'];
 export const AUDIENCE_SUBMISSION_STATUSES: readonly AudienceSubmissionStatus[] = [
 	'pending',
 	'approved',
@@ -28,32 +28,6 @@ export interface RankedAudienceSubmission {
 
 export function canEditAudienceSubmission(show: AudienceSubmissionGateShow | null): boolean {
 	return show ? canUseAudienceSubmissionGate(show) : false;
-}
-
-export function getApprovedAudienceSubmissionsByKind(
-	submissions: readonly AudienceSubmission[]
-): ApprovedAudienceSubmissionsByKind {
-	const approvedSubmissionsByKind: ApprovedAudienceSubmissionsByKind = {
-		posts: [],
-		tools: []
-	};
-
-	for (const submission of submissions) {
-		if (submission.status !== 'approved') {
-			continue;
-		}
-
-		if (submission.kind === 'post') {
-			approvedSubmissionsByKind.posts.push(submission);
-		} else {
-			approvedSubmissionsByKind.tools.push(submission);
-		}
-	}
-
-	approvedSubmissionsByKind.posts.sort(compareAudienceSubmissionsByNewest);
-	approvedSubmissionsByKind.tools.sort(compareAudienceSubmissionsByNewest);
-
-	return approvedSubmissionsByKind;
 }
 
 export function getAudienceSubmissionTitle(submission: AudienceSubmission): string {
@@ -115,14 +89,6 @@ export function compareAudienceSubmissionsByNewest(
 	second: AudienceSubmission
 ): number {
 	return getSubmissionTime(second) - getSubmissionTime(first) || second.id.localeCompare(first.id);
-}
-
-export function isAudienceSubmissionKind(value: string): value is AudienceSubmissionKind {
-	return AUDIENCE_SUBMISSION_KINDS.includes(value as AudienceSubmissionKind);
-}
-
-export function isAudienceSubmissionStatus(value: string): value is AudienceSubmissionStatus {
-	return AUDIENCE_SUBMISSION_STATUSES.includes(value as AudienceSubmissionStatus);
 }
 
 function compareRankedAudienceSubmissions(

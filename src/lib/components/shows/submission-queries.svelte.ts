@@ -1,5 +1,4 @@
 import { QuerySubscription } from 'jazz-tools/svelte';
-
 import { app } from '$lib/schema';
 import type { AudienceSubmission, SubmissionVote } from '$lib/schema';
 
@@ -40,36 +39,6 @@ export function createOwnShowSubmissionVotesSubscription(
 			return id && currentVoterId
 				? app.submissionVotes.where({ showId: id, voterId: currentVoterId })
 				: undefined;
-		},
-		{ tier: 'global' }
-	);
-}
-
-export function createOwnShowSubmissionSubscription(
-	showId: () => string | undefined,
-	authorId: () => string | undefined
-): QuerySubscription<AudienceSubmission> {
-	return new QuerySubscription(
-		() => {
-			const id = showId();
-			const currentAuthorId = authorId();
-
-			return id && currentAuthorId
-				? app.audienceSubmissions.where({ showId: id, authorId: currentAuthorId })
-				: undefined;
-		},
-		{ tier: 'global' }
-	);
-}
-
-export function createAudienceSubmissionSubscription(
-	submissionId: () => string | undefined
-): QuerySubscription<AudienceSubmission> {
-	return new QuerySubscription(
-		() => {
-			const id = submissionId();
-
-			return id ? app.audienceSubmissions.where({ id }) : undefined;
 		},
 		{ tier: 'global' }
 	);

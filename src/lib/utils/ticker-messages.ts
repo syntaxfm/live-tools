@@ -2,10 +2,7 @@ import type { TickerMessage } from '$lib/schema';
 
 const MINIMUM_LOOP_ITEMS = 8;
 
-export function compareTickerMessagesByPosition(
-	first: TickerMessage,
-	second: TickerMessage
-): number {
+function compareTickerMessagesByPosition(first: TickerMessage, second: TickerMessage): number {
 	return (
 		new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime() ||
 		first.id.localeCompare(second.id)

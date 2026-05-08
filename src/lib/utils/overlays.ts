@@ -40,7 +40,3 @@ export const OVERLAY_FEATURES: readonly OverlayFeatureInfo[] = [
 		path: '/overlay/feud-board'
 	}
 ];
-
-export function getOverlayLabel(feature: OverlayFeature): string {
-	return OVERLAY_FEATURES.find((overlay) => overlay.feature === feature)?.label ?? feature;
-}

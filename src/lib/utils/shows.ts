@@ -1,4 +1,4 @@
-import type { Show, ShowHost } from '$lib/schema';
+import type { Show } from '$lib/schema';
 
 export type ShowRouteSurface = 'viewer' | 'host' | 'admin';
 export type ShowStatus = Show['status'];
@@ -13,24 +13,7 @@ interface AudienceSubmissionGateState extends ShowActivityState {
 	audienceSubmissionsOpen: boolean;
 }
 
-interface ShowSelectionState {
-	id: string;
-	createdAt: Show['createdAt'];
-	startsAt: Show['startsAt'];
-	status: ShowStatus;
-}
-
-const SHOW_ROUTE_PREFIXES: Record<ShowRouteSurface, string> = {
-	viewer: '/show',
-	host: '/host/shows',
-	admin: '/admin/shows'
-};
-
-export function isPublicShowStatus(status: ShowStatus): boolean {
-	return status === 'live' || status === 'ended';
-}
-
-export function isLiveShow(show: ShowActivityState): boolean {
+function isLiveShow(show: ShowActivityState): boolean {
 	return show.status === 'live';
 }
 
@@ -44,21 +27,6 @@ export function parseShowStatus(value: string): ShowStatus {
 	}
 
 	throw new TypeError('Invalid show status');
-}
-
-export function compareShowsByRecency(
-	first: ShowSelectionState,
-	second: ShowSelectionState
-): number {
-	return (
-		getShowTime(second.startsAt) - getShowTime(first.startsAt) ||
-		getShowTime(second.createdAt) - getShowTime(first.createdAt) ||
-		second.id.localeCompare(first.id)
-	);
-}
-
-export function getShowPath(surface: ShowRouteSurface, showId: string): string {
-	return `${SHOW_ROUTE_PREFIXES[surface]}/${showId}`;
 }
 
 export function formatShowDate(timestamp: Show['startsAt'] | null): string {
