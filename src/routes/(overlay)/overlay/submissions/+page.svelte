@@ -1,5 +1,23 @@
 <script lang="ts">
-	import CurrentSubmissionsOverlay from '$lib/components/shows/CurrentSubmissionsOverlay.svelte';
+	import SubmissionsOverlay from '$lib/components/shows/SubmissionsOverlay.svelte';
+	import { app } from '$lib/schema';
+	import { QuerySubscription } from 'jazz-tools/svelte';
+
+	const shows = new QuerySubscription(
+		app.shows
+			.where({
+				status: 'live'
+			})
+			.orderBy('startsAt', 'desc')
+			.include({
+				audienceSubmissionsViaShow: app.audienceSubmissions.where({}).include({
+					submissionVotesViaSubmission: app.submissionVotes.where({})
+				})
+			})
+	);
+	$inspect(shows.current);
 </script>
 
-<CurrentSubmissionsOverlay />
+{#if shows.current?.[0]}
+	<SubmissionsOverlay show={shows.current[0]} />
+{/if}

@@ -1,86 +1,29 @@
 <script lang="ts">
-	import { tick } from 'svelte';
-
-	import { createShowSubmissionVotesSubscription } from '$lib/components/shows/submission-queries.svelte';
-	import {
-		getAudienceSubmissionTitle,
-		getTopVotedAudienceSubmissions,
-		type RankedAudienceSubmission
-	} from '$lib/utils/submissions';
-	import { getViewTransitionName, updateWithViewTransition } from '$lib/utils/view-transitions';
-
-	import { type AudienceSubmission, type Show } from '$lib/schema';
-
-	const SUBMISSIONS_OVERLAY_LIMIT = 4;
-
+	import { type AudienceSubmission, type Show, type SubmissionVote } from '$lib/schema';
+	import { flip } from 'svelte/animate';
 	let {
 		show
 	}: {
 		show: Show & {
-			audienceSubmissionsViaShow: AudienceSubmission[];
+			audienceSubmissionsViaShow: (AudienceSubmission & {
+				submissionVotesViaSubmission: SubmissionVote[];
+			})[];
 		};
 	} = $props();
 	const submissions = $derived(show.audienceSubmissionsViaShow);
-
-	const votes = createShowSubmissionVotesSubscription(() => show.id);
-	const rankedSubmissions = $derived(
-		getTopVotedAudienceSubmissions(
-			submissions ?? [],
-			votes.current ?? [],
-			SUBMISSIONS_OVERLAY_LIMIT
-		)
-	);
-	const rankedSubmissionsSignature = $derived(
-		rankedSubmissions
-			.map(({ submission, voteCount }) =>
-				[
-					submission.id,
-					voteCount,
-					submission.title ?? '',
-					submission.url,
-					submission.notes ?? '',
-					submission.updatedAt ?? ''
-				].join(':')
-			)
-			.join('|')
-	);
-
-	let displayedSubmissions = $state<RankedAudienceSubmission[]>([]);
-	let displayedSubmissionsSignature = $state('');
-
-	$effect(() => {
-		const nextSubmissions = rankedSubmissions;
-		const nextSignature = rankedSubmissionsSignature;
-
-		if (nextSignature === displayedSubmissionsSignature) {
-			return;
-		}
-
-		updateWithViewTransition(async () => {
-			displayedSubmissions = nextSubmissions;
-			displayedSubmissionsSignature = nextSignature;
-			await tick();
-		}).catch((caughtError: unknown) => {
-			console.error('Unable to transition submissions overlay', caughtError);
-			displayedSubmissions = nextSubmissions;
-			displayedSubmissionsSignature = nextSignature;
-		});
-	});
+	$inspect(submissions);
 </script>
 
-{#if displayedSubmissions.length > 0}
+{#if submissions.length > 0}
 	<section class="submissions-overlay" aria-label="Submissions">
 		<ol class="submissions-overlay__list">
-			{#each displayedSubmissions as { submission, voteCount }, index (submission.id)}
-				<li
-					class="submissions-overlay__item"
-					style={`view-transition-name: ${getViewTransitionName('submission', submission.id)}`}
-				>
-					<span class="submissions-overlay__rank">{index + 1}</span>
-					<h1>{getAudienceSubmissionTitle(submission)}</h1>
-					<span class="submissions-overlay__votes" aria-label={`${voteCount} votes`}
-						>{voteCount}</span
+			{#each submissions as submission (submission.id)}
+				{@const vote_count = submission?.submissionVotesViaSubmission?.length}
+				<li animate:flip class="submissions-overlay__item">
+					<span class="submissions-overlay__votes" aria-label={`${vote_count} votes`}
+						>{vote_count}</span
 					>
+					<h1>{submission.title || submission.url}</h1>
 				</li>
 			{/each}
 		</ol>
@@ -95,8 +38,6 @@
 		display: grid;
 		width: min(720px, calc(100% - 128px));
 		gap: 16px;
-		animation: submissions-overlay-in 240ms cubic-bezier(0.2, 0, 0, 1) both;
-		view-transition-name: submissions-overlay;
 	}
 
 	.submissions-overlay__list {

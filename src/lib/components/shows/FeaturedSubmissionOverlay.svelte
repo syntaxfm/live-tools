@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { createShowApprovedSubmissionsSubscription } from '$lib/components/shows/submission-queries.svelte';
 	import { app } from '$lib/schema';
-	import { getAudienceSubmissionTitle } from '$lib/utils/submissions';
 	import { QuerySubscription } from 'jazz-tools/svelte';
 
 	interface Props {
@@ -22,7 +20,7 @@
 
 {#if submission}
 	<section class="overlay-readout overlay-readout--submission">
-		<h1>{getAudienceSubmissionTitle(submission)}</h1>
+		<h1>{submission.title || submission.url}</h1>
 		{#if submission?.notes}
 			<h2>{submission?.notes}</h2>
 		{/if}

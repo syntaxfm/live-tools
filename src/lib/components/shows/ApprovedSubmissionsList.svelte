@@ -1,51 +1,31 @@
 <script lang="ts">
-	import {
-		createOwnShowSubmissionVotesSubscription,
-		createShowApprovedSubmissionsSubscription,
-		createShowSubmissionVotesSubscription
-	} from '$lib/components/shows/submission-queries.svelte';
-	import type { AudienceSubmission } from '$lib/schema';
-	import {
-		compareAudienceSubmissionsByNewest,
-		getAudienceSubmissionTitle,
-		getSubmissionVoteCounts,
-		getSubmissionVotesBySubmissionId
-	} from '$lib/utils/submissions';
+	import { type AudienceSubmission, type Show, type SubmissionVote } from '$lib/schema';
 	import { getSession } from 'jazz-tools/svelte';
+	import { flip } from 'svelte/animate';
 
-	interface Props {
-		showId: string | undefined;
-	}
-
-	let { showId }: Props = $props();
+	let {
+		show
+	}: {
+		show: Show & {
+			audienceSubmissionsViaShow: (AudienceSubmission & {
+				submissionVotesViaSubmission: SubmissionVote[];
+			})[];
+		};
+	} = $props();
 
 	const session = getSession();
-	const submissions = createShowApprovedSubmissionsSubscription(() => showId);
-	const votes = createShowSubmissionVotesSubscription(() => showId);
-	const ownVotes = createOwnShowSubmissionVotesSubscription(
-		() => showId,
-		() => session?.user_id
-	);
-	const approvedSubmissions = $derived(
-		[...(submissions.current ?? [])].sort(compareAudienceSubmissionsByNewest)
-	);
-	const voteCounts = $derived(getSubmissionVoteCounts(votes.current ?? []));
-	const ownVotesBySubmissionId = $derived(getSubmissionVotesBySubmissionId(ownVotes.current ?? []));
-
 	let pendingVoteSubmissionId = $state<string | null>(null);
 	let error = $state<string | null>(null);
 
 	async function handleVote(submission: AudienceSubmission): Promise<void> {
 		if (
-			!showId ||
 			!session?.user_id ||
 			submission.authorId === session.user_id ||
 			pendingVoteSubmissionId === submission.id
 		) {
 			return;
 		}
-
-		const existingVote = ownVotesBySubmissionId.get(submission.id) ?? null;
+		// TODO handle voting
 
 		pendingVoteSubmissionId = submission.id;
 		error = null;
@@ -61,53 +41,80 @@
 	}
 </script>
 
-<section class="surface" data-depth="medium">
-	{#if submissions.error || votes.error || ownVotes.error}
-		<p class="status" data-state="warning">
-			{(submissions.error ?? votes.error ?? ownVotes.error)?.message}
-		</p>
-	{:else if approvedSubmissions.length}
-		<ul class="submission-list">
-			{#each approvedSubmissions as submission (submission.id)}
-				{@const voteCount = voteCounts.get(submission.id) ?? 0}
-				{@const ownVote = ownVotesBySubmissionId.get(submission.id)}
-				{@const canVote = Boolean(session?.user_id && submission.authorId !== session.user_id)}
-				<li>
-					<span class="badge" aria-label={`${voteCount} votes`}>{voteCount}</span>
-					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-					<a class="submission-link" href={submission.url} rel="noreferrer" target="_blank"
-						>{getAudienceSubmissionTitle(submission)}</a
-					>
-					<p class="inline-actions">
-						{#if canVote}
-							<button
-								data-variant={ownVote ? 'primary' : undefined}
-								disabled={pendingVoteSubmissionId === submission.id}
-								type="button"
-								onclick={() => handleVote(submission)}
-							>
-								{ownVote ? 'Upvoted' : 'Upvote'}
-							</button>
-						{/if}
-					</p>
-				</li>
-			{/each}
-		</ul>
-	{:else}
-		<h3>Submissions incoming...</h3>
-	{/if}
+{#if show.audienceSubmissionsViaShow}
+	<ul class="submission-list">
+		{#each show.audienceSubmissionsViaShow as submission (submission.id)}
+			{@const canVote = Boolean(session?.user_id && submission.authorId !== session.user_id)}
+			{@const vote_count = submission.submissionVotesViaSubmission.length}
+			{@const user_voted = submission.submissionVotesViaSubmission.find(
+				(vote) => vote.voterId === session?.user_id
+			)}
+			<li animate:flip>
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+				<a class="submission-link" href={submission.url} rel="noreferrer" target="_blank"
+					>{submission.title || submission.url}</a
+				>
+				<p class="inline-actions">
+					{#if canVote}
+						<button
+							data-variant={user_voted ? 'primary' : undefined}
+							disabled={pendingVoteSubmissionId === submission.id}
+							type="button"
+							onclick={() => handleVote(submission)}
+						>
+							<span aria-label={`${vote_count} votes`}>{vote_count}</span>
+							{user_voted ? 'Upvoted' : 'Upvote'}
+						</button>
+					{/if}
+				</p>
+			</li>
+		{/each}
+	</ul>
+{:else}
+	<h3>Submissions incoming...</h3>
+{/if}
 
-	{#if error}
-		<p class="status" data-state="warning">{error}</p>
-	{/if}
-</section>
+{#if error}
+	<p class="status" data-state="warning">{error}</p>
+{/if}
 
 <style>
+	.submission-list {
+		display: grid;
+		margin: 0;
+		padding: 0;
+		gap: 0.875rem;
+		list-style: none;
+	}
+
+	.submission-list > li {
+		gap: 0.625rem;
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.submission-list > li:last-child {
+		border-bottom: 0;
+	}
+
 	li {
 		display: flex;
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius-lg);
+		background: var(--color-surface);
+		box-shadow: var(--shadow-raised-md);
+		padding: 0.625rem 0.75rem;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	a {
+		text-decoration: none;
+		color: white;
 	}
 
 	.inline-actions {
-		margin-left: auto;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 	}
 </style>

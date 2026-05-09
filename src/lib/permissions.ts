@@ -6,6 +6,7 @@ export const permissions = s.definePermissions(
 	app,
 	({ policy, allOf, allowedTo, anyOf, session }) => {
 		const is_admin = session.where({ 'claims.is_admin': true });
+		const is_logged_in = session.where({ authMode: 'external' });
 
 		const not_banned = policy.better_auth_user.exists.where({
 			id: session.user_id,
@@ -60,13 +61,7 @@ export const permissions = s.definePermissions(
 		policy.tickerMessages.allowDelete.where(is_admin);
 
 		policy.audienceSubmissions.allowRead.where(() =>
-			anyOf([
-				is_admin,
-				allOf([{ status: 'approved' }, canReadShow]),
-				policy.better_auth_user.exists.where({
-					id: session.user_id
-				})
-			])
+			anyOf([is_admin, allOf([{ status: 'approved' }, canReadShow])])
 		);
 		policy.audienceSubmissions.allowInsert.where((submission) =>
 			anyOf([
@@ -74,13 +69,13 @@ export const permissions = s.definePermissions(
 				allOf([
 					{ status: 'pending', isFeatured: false },
 					not_banned,
+					is_logged_in,
 					policy.shows.exists.where({
 						id: submission.showId,
 						status: 'live',
 						audienceSubmissionsOpen: true
 					})
-				]),
-				allOf([{ status: 'pending', isFeatured: false }])
+				])
 			])
 		);
 		policy.audienceSubmissions.allowUpdate.where(is_admin);

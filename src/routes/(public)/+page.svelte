@@ -11,13 +11,15 @@
 			})
 			.orderBy('startsAt', 'desc')
 			.include({
-				audienceSubmissionsViaShow: app.audienceSubmissions.where({})
+				audienceSubmissionsViaShow: app.audienceSubmissions.where({}).include({
+					submissionVotesViaSubmission: app.submissionVotes.where({})
+				})
 			})
 	);
-	$inspect(shows.current); 
+	$inspect(shows.current);
 </script>
 
 {#if shows.current?.[0]}
 	<AudienceSubmissionPanel show={shows.current?.[0]} />
-	<ApprovedSubmissionsList showId={shows.current?.[0].id} />
+	<ApprovedSubmissionsList show={shows.current?.[0]} />
 {/if}

@@ -7,8 +7,7 @@
 	import { app, type Show } from '$lib/schema';
 	import {
 		AUDIENCE_SUBMISSION_STATUSES,
-		compareAudienceSubmissionsByNewest,
-		getAudienceSubmissionTitle
+		compareAudienceSubmissionsByNewest
 	} from '$lib/utils/submissions';
 	import type { AudienceSubmissionStatus } from '$lib/utils/submissions';
 
@@ -128,7 +127,7 @@
 				<li>
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 					<a href={submission.url} rel="noreferrer" target="_blank"
-						>{getAudienceSubmissionTitle(submission)}</a
+						>{submission.title || submission.url}</a
 					>
 					<span class="badge">{submission.status}</span>
 

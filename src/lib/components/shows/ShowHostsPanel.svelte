@@ -51,20 +51,17 @@
 	<p class="section-label">Hosts</p>
 
 	<form>
-		<fieldset disabled={isUpdating}>
-			<legend>Hosts</legend>
-			{#each hosts.current as host (host?.id)}
-				<label class="checkbox-field">
-					<input
-						checked={selectedHostIds.includes(host.id)}
-						name="hostIds"
-						type="checkbox"
-						value={host?.id}
-						onchange={handleHostChange}
-					/>
-					{host?.name}
-				</label>
-			{/each}
-		</fieldset>
+		{#each hosts.current as host (host?.id)}
+			<label class="checkbox-field">
+				<input
+					checked={selectedHostIds.includes(host.id)}
+					name="hostIds"
+					type="checkbox"
+					value={host?.id}
+					onchange={handleHostChange}
+				/>
+				{host?.name}
+			</label>
+		{/each}
 	</form>
 </section>
