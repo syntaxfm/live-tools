@@ -11,7 +11,6 @@
 		};
 	} = $props();
 	const submissions = $derived(show.audienceSubmissionsViaShow);
-	$inspect(submissions);
 </script>
 
 {#if submissions.length > 0}
@@ -20,9 +19,7 @@
 			{#each submissions as submission (submission.id)}
 				{@const vote_count = submission?.submissionVotesViaSubmission?.length}
 				<li animate:flip class="submissions-overlay__item">
-					<span class="submissions-overlay__votes" aria-label={`${vote_count} votes`}
-						>{vote_count}</span
-					>
+					<span class="vote" aria-label={`${vote_count} votes`}>{vote_count}</span>
 					<h1>{submission.title || submission.url}</h1>
 				</li>
 			{/each}
@@ -36,7 +33,7 @@
 		right: 64px;
 		bottom: 64px;
 		display: grid;
-		width: min(720px, calc(100% - 128px));
+		width: min(890px, calc(100% - 18px));
 		gap: 16px;
 	}
 
@@ -50,73 +47,39 @@
 
 	.submissions-overlay__item {
 		display: grid;
-		grid-template-columns: 56px minmax(0, 1fr) max-content;
+		grid-template-columns: 100px minmax(0, 1fr) max-content;
 		align-items: center;
-		gap: 20px;
+		gap: 10px;
 		min-height: 108px;
-		padding: 18px 22px;
-		border: var(--border-width) solid var(--color-black);
+		border: 1px solid var(--color-border-subtle);
 		border-radius: var(--radius-lg);
 		background: var(--color-surface);
-		box-shadow: var(--shadow-raised-md);
+		box-shadow: var(--shadow-raised-lg);
 		contain: layout;
-	}
-
-	.submissions-overlay__rank,
-	.submissions-overlay__votes {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		font-family: var(--font-label);
-		font-weight: 700;
-		letter-spacing: 0;
-	}
-
-	.submissions-overlay__rank {
-		width: 56px;
-		height: 56px;
-		border: var(--border-width) solid var(--color-ink);
-		border-radius: var(--radius-md);
-		background: var(--color-accent);
-		color: var(--color-ink);
-		font-size: 28px;
+		overflow: hidden;
 	}
 
 	.submissions-overlay__item > h1 {
 		overflow: hidden;
+		padding: 18px 22px;
 		color: var(--color-text);
 		font-size: 34px;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.submissions-overlay__votes {
-		min-width: 72px;
-		color: var(--color-accent);
+	.vote {
+		padding: 0 40px;
+		color: var(--color-ink);
+		box-shadow: 2px 0 0 0 var(--color-ink);
+		background: var(--color-accent);
 		font-size: 42px;
-	}
-
-	:global(::view-transition-group(submissions-overlay)) {
-		animation-duration: 320ms;
-		animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
-	}
-
-	:global(::view-transition-old(submissions-overlay)),
-	:global(::view-transition-new(submissions-overlay)) {
-		animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
-	}
-
-	@keyframes submissions-overlay-in {
-		from {
-			opacity: 0;
-			translate: 24px 18px;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.submissions-overlay,
-		.submissions-overlay__item {
-			view-transition-name: none !important;
-		}
+		justify-content: center;
+		border-right: var(--border-width) solid var(--color-ink);
+		display: flex;
+		align-items: center;
+		height: 100%;
+		font-size: 3.2rem;
+		font-weight: 700;
 	}
 </style>

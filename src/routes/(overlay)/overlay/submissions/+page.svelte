@@ -15,7 +15,6 @@
 				})
 			})
 	);
-	$inspect(shows.current);
 </script>
 
 {#if shows.current?.[0]}

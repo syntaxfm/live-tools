@@ -31,7 +31,6 @@
 		error = null;
 
 		try {
-			// TODO Vote
 		} catch (caughtError) {
 			console.error('Unable to vote on audience submission', caughtError);
 			error = 'Unable to vote';
@@ -44,7 +43,11 @@
 {#if show.audienceSubmissionsViaShow}
 	<ul class="submission-list">
 		{#each show.audienceSubmissionsViaShow as submission (submission.id)}
-			{@const canVote = Boolean(session?.user_id && submission.authorId !== session.user_id)}
+			{@const canVote = Boolean(
+				session?.user_id &&
+				submission.authorId !== session.user_id &&
+				session.authMode === 'external'
+			)}
 			{@const vote_count = submission.submissionVotesViaSubmission.length}
 			{@const user_voted = submission.submissionVotesViaSubmission.find(
 				(vote) => vote.voterId === session?.user_id
@@ -55,17 +58,15 @@
 					>{submission.title || submission.url}</a
 				>
 				<p class="inline-actions">
-					{#if canVote}
-						<button
-							data-variant={user_voted ? 'primary' : undefined}
-							disabled={pendingVoteSubmissionId === submission.id}
-							type="button"
-							onclick={() => handleVote(submission)}
-						>
-							<span aria-label={`${vote_count} votes`}>{vote_count}</span>
-							{user_voted ? 'Upvoted' : 'Upvote'}
-						</button>
-					{/if}
+					<button
+						data-variant={!user_voted && canVote ? 'primary' : undefined}
+						disabled={pendingVoteSubmissionId === submission.id}
+						type="button"
+						onclick={() => handleVote(submission)}
+					>
+						<span aria-label={`${vote_count} votes`}>{vote_count}</span>
+						{user_voted ? 'UnVote' : 'Vote'}
+					</button>
 				</p>
 			</li>
 		{/each}
@@ -90,6 +91,8 @@
 	.submission-list > li {
 		gap: 0.625rem;
 		border-bottom: 1px solid var(--color-border-subtle);
+		font-size: 1.1rem;
+		font-weight: 500;
 	}
 
 	.submission-list > li:last-child {
