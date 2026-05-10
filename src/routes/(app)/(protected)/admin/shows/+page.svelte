@@ -143,7 +143,6 @@
 </script>
 
 <section class="surface" data-depth="medium">
-	<p class="section-label">Admin</p>
 	<h1>Manage shows</h1>
 
 	{#if is_admin}
@@ -166,15 +165,12 @@
 				<button disabled={isCreating} type="submit">Create</button>
 			</div>
 
-			<fieldset>
-				<legend>Hosts</legend>
-				{#each hosts.current as host (host.id)}
-					<label class="checkbox-field">
-						<input checked name="hostIds" type="checkbox" value={host.id} />
-						{host.name}
-					</label>
-				{/each}
-			</fieldset>
+			{#each hosts.current as host (host.id)}
+				<label class="checkbox-field">
+					<input checked name="hostIds" type="checkbox" value={host.id} />
+					{host.name}
+				</label>
+			{/each}
 
 			{#if formError}
 				<p class="status" data-state="warning">{formError}</p>
@@ -221,3 +217,9 @@
 		{/if}
 	</section>
 {/if}
+
+<style>
+	li {
+		list-style: none;
+	}
+</style>

@@ -54,7 +54,7 @@
 		border: 1px solid var(--color-border-subtle);
 		border-radius: var(--radius-lg);
 		background: var(--color-surface);
-		box-shadow: var(--shadow-raised-lg);
+		box-shadow: var(--shadow-raised-md);
 		contain: layout;
 		overflow: hidden;
 	}

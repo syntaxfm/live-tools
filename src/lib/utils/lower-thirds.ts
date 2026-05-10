@@ -33,15 +33,15 @@ const LOWER_THIRD_ASSETS: readonly LowerThirdAsset[] = [
 
 const DEFAULT_LOWER_THIRD_ASSET = LOWER_THIRD_ASSETS[0];
 
-export function getLowerThirdTitle(host: ShowHost): string {
-	return host.lowerThirdTitle?.trim() ?? '';
+export function getLowerThirdTitle(host: ShowHost | null): string {
+	return host?.lowerThirdTitle?.trim() ?? '';
 }
 
-export function getLowerThirdAsset(host: ShowHost): LowerThirdAsset {
-	const normalizedName = host.displayName.toLowerCase();
+export function getLowerThirdAsset(host: ShowHost | null): LowerThirdAsset {
+	const normalizedName = host?.displayName.toLowerCase();
 
 	return (
-		LOWER_THIRD_ASSETS.find((asset) => normalizedName.includes(asset.key)) ??
+		LOWER_THIRD_ASSETS.find((asset) => normalizedName?.includes(asset.key)) ??
 		DEFAULT_LOWER_THIRD_ASSET
 	);
 }

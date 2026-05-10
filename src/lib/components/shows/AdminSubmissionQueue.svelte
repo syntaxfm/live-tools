@@ -117,7 +117,6 @@
 
 <section class="surface" data-depth="medium">
 	<p class="section-label">Queue</p>
-	<h2>Submissions</h2>
 
 	{#if submissions.error}
 		<p class="status" data-state="warning">{submissions.error.message}</p>

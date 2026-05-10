@@ -147,3 +147,24 @@
 		<h2>No hosts</h2>
 	{/if}
 </section>
+
+<style>
+	.lower-third-controls {
+		display: grid;
+		margin: 0 0 0.875rem;
+		padding: 0;
+		gap: 0.75rem;
+		list-style: none;
+	}
+
+	.lower-third-controls > li {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) max-content;
+		gap: 0.75rem;
+		align-items: end;
+	}
+
+	.lower-third-controls > li[data-active='true'] {
+		border-color: var(--color-accent);
+	}
+</style>

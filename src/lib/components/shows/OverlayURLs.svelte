@@ -6,7 +6,7 @@
 </script>
 
 <section class="surface" data-depth="medium">
-	<h2>Overlay URLs</h2>
+	<p class="section-label">Overlays</p>
 	<ul>
 		{#each OVERLAY_FEATURES as overlay (overlay.feature)}
 			<li>

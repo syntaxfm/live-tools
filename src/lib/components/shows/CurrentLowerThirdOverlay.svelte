@@ -3,15 +3,18 @@
 	import { app } from '$lib/schema';
 	import { QuerySubscription } from 'jazz-tools/svelte';
 
-	const shows = new QuerySubscription(
+	const shows = new QuerySubscription(() =>
 		app.shows
 			.where({
 				status: 'live'
 			})
 			.orderBy('startsAt', 'desc')
+			.include({
+				activeLowerThirdShowHost: true
+			})
 	);
 </script>
 
 {#if shows.current?.[0]}
-	<LowerThirdOverlay showId={shows.current[0].id} />
+	<LowerThirdOverlay show={shows.current[0]} />
 {/if}

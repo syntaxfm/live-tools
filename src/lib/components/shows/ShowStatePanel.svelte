@@ -74,8 +74,6 @@
 </script>
 
 <section class="surface" data-depth="medium">
-	<p class="section-label">State</p>
-
 	<h2>{formatShowDate(show.startsAt)}</h2>
 
 	<div class="form-row">
