@@ -48,7 +48,7 @@
 		}
 		db.update(app.showHosts, host.id, {
 			lowerThirdTitle: input.value.trim() || null
-		});
+		}).wait({ tier: 'global' });
 
 		pendingHostId = null;
 	}
@@ -70,9 +70,11 @@
 
 		try {
 			clearAutoHideTimer();
-			db.update(app.shows, show.id, {
-				activeLowerThirdShowHostId: host.id
-			});
+			await db
+				.update(app.shows, show.id, {
+					activeLowerThirdShowHostId: host.id
+				})
+				.wait({ tier: 'global' });
 			scheduleAutoHide();
 		} catch (caughtError) {
 			console.error('Unable to broadcast lower third', caughtError);
@@ -84,9 +86,11 @@
 
 	async function clearLowerThird(): Promise<void> {
 		clearAutoHideTimer();
-		db.update(app.shows, show.id, {
-			activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
-		});
+		await db
+			.update(app.shows, show.id, {
+				activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
+			})
+			.wait({ tier: 'global' });
 	}
 
 	function scheduleAutoHide(): void {
