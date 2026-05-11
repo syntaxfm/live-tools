@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { flip } from 'svelte/animate';
+
 	import type { Show, TickerMessage } from '$lib/schema';
 	import { getTickerLoopMessages } from '$lib/utils/ticker-messages';
-	import { flip } from 'svelte/animate';
+	import { tickerScrollDuration } from './ticker-scroll';
 
 	interface Props {
 		show: Show & {
@@ -22,7 +24,7 @@
 
 		<div class="ticker__track">
 			<div class="ticker__content">
-				<span class="ticker__block">
+				<span class="ticker__block" use:tickerScrollDuration>
 					{#each loopMessages as message, index (`primary-${message.id}-${index}`)}
 						<div animate:flip={{ duration: 200 }}>
 							<span class="ticker__item">{message.text}</span>

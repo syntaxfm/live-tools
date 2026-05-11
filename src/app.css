@@ -434,7 +434,7 @@ label,
 .section-label {
 	margin-bottom: 10px;
 	text-align: center;
-	background: #000;
+	background: var(--color-ink);
 	margin: -1rem -1rem 1rem;
 	border-bottom: 1px solid var(--color-border-subtle);
 	padding: 0.2rem;
@@ -765,7 +765,7 @@ label,
 	font-size: 1.625rem;
 	font-weight: 500;
 	white-space: nowrap;
-	animation: ticker-scroll 50s linear infinite;
+	animation: ticker-scroll var(--ticker-duration, 50s) linear infinite;
 	will-change: transform;
 }
 
