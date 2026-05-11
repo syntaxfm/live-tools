@@ -2,8 +2,12 @@
 	import { app } from '$lib/schema';
 	import { QuerySubscription } from 'jazz-tools/svelte';
 
+	console.log('users page');
 	const users = new QuerySubscription(app.better_auth_user.where({}));
+	$inspect(users.current);
 </script>
+
+<button onclick={() => window?.__jazz?.clearStorage()}>Clear Data</button>
 
 <div class="table">
 	<table>
