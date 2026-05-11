@@ -72,7 +72,7 @@
 		position: relative;
 		z-index: 1;
 		min-width: 360px;
-		padding: 14px 20px 14px clamp(128px, 19vw, 160px);
+		padding: 14px 20px 14px 180px;
 		border: var(--border-width) solid var(--color-border);
 		border-radius: var(--radius-lg);
 		background: var(--color-surface);
