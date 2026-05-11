@@ -14,7 +14,8 @@
 				audienceSubmissionsViaShow: app.audienceSubmissions.where({}).include({
 					submissionVotesViaSubmission: app.submissionVotes.where({})
 				})
-			})
+			}),
+		{ tier: 'global' }
 	);
 </script>
 
