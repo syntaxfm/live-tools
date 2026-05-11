@@ -1,4 +1,4 @@
-export type OverlayFeature =
+type OverlayFeature =
 	| 'lower-thirds'
 	| 'ticker'
 	| 'featured-submission'

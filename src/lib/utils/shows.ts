@@ -1,6 +1,5 @@
 import type { Show } from '$lib/schema';
 
-export type ShowRouteSurface = 'viewer' | 'host' | 'admin';
 export type ShowStatus = Show['status'];
 
 export const SHOW_STATUSES: readonly ShowStatus[] = ['draft', 'live', 'ended'];

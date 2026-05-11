@@ -2,12 +2,12 @@
 	let { children } = $props();
 </script>
 
-<div>
+<div class="overlay-root">
 	{@render children()}
 </div>
 
 <style>
-	div {
+	.overlay-root {
 		position: relative;
 		width: 1920px;
 		height: 1080px;
