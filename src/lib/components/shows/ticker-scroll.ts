@@ -2,7 +2,7 @@ import type { Action } from 'svelte/action';
 
 const TICKER_SCROLL_PIXELS_PER_SECOND = 64;
 const MINIMUM_TICKER_SCROLL_SECONDS = 50;
-const MAXIMUM_TICKER_SCROLL_SECONDS = 180;
+const MAXIMUM_TICKER_SCROLL_SECONDS = 250;
 
 function clampTickerScrollSeconds(seconds: number): number {
 	return Math.min(MAXIMUM_TICKER_SCROLL_SECONDS, Math.max(MINIMUM_TICKER_SCROLL_SECONDS, seconds));
