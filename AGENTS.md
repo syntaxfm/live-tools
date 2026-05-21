@@ -40,7 +40,7 @@
 
   ```ts
   const submissions = new QuerySubscription(() =>
-      show.id ? app.audienceSubmissions.where({ showId: show.id }) : undefined
+  	show.id ? app.audienceSubmissions.where({ showId: show.id }) : undefined
   );
   ```
 
@@ -62,26 +62,26 @@
 
   ```svelte
   <script lang="ts">
-      import { getDb } from 'jazz-tools/svelte';
-      import { app, type AudienceSubmission } from '$lib/schema';
+  	import { getDb } from 'jazz-tools/svelte';
+  	import { app, type AudienceSubmission } from '$lib/schema';
 
-      let { submission }: { submission: AudienceSubmission } = $props();
-      const db = getDb();
+  	let { submission }: { submission: AudienceSubmission } = $props();
+  	const db = getDb();
 
-      function approve() {
-          db.update(app.audienceSubmissions, submission.id, { status: 'approved' });
-      }
+  	function approve() {
+  		db.update(app.audienceSubmissions, submission.id, { status: 'approved' });
+  	}
 
-      function remove() {
-          db.delete(app.audienceSubmissions, submission.id);
-      }
+  	function remove() {
+  		db.delete(app.audienceSubmissions, submission.id);
+  	}
   </script>
 
   <button onclick={approve}>Approve</button>
   <button onclick={remove}>Delete</button>
   ```
 
-- **Authorization is enforced by Jazz permissions** in `src/lib/permissions.ts`. The permission layer rejects writes the session isn't allowed to make. Do not wrap inline mutations in JS `assertAdmin` guards — that's redundant. UI-side `is_admin` derived values exist to show/hide affordances, not to authorize the write.
+- **Authorization is enforced by Jazz permissions** in `src/lib/permissions.ts`. The permission layer rejects writes the session isn't allowed to make. Do not wrap mutations in JS `assertAdmin` guards — that's redundant whether the mutation is inline or inside a `*-actions.ts` helper. UI-side `is_admin` derived values exist to show/hide affordances, not to authorize the write. JS-side invariant checks that the permission layer does _not_ express (e.g. "submission must be `approved` before featuring") are still legitimate.
 - Treat Jazz writes as local-first. Use `.wait({ tier: 'global' })` only when the next step or UI actually needs confirmed global sync (e.g. you're about to navigate, or chain another write against the inserted id). Fire-and-forget UI writes don't need it.
 - Only extract a helper into a `*-actions.ts` file when the operation is **non-trivial multi-step orchestration** — for example the cascading delete in `show-actions.ts` `deleteShow`, which reads from five tables, deletes children in batched `Promise.all`s, then deletes the parent. A single `db.update` is never that.
 - For cascading deletes, batch reads with `db.all(..., { tier: 'global' })`, then run each table's deletes in `Promise.all` with `.wait({ tier: 'global' })` per row. See `deleteShow` for the canonical shape.
@@ -113,6 +113,27 @@
 - UI labels may display admin/viewer derived from `session?.claims.is_admin`, but the authoritative check is always the signed Jazz session claim.
 - Better Auth's internal tables (`better_auth_session`, `better_auth_account`, `better_auth_verification`, `better_auth_jwks`) are locked down with `allowRead/Insert/Update/Delete.never()` in permissions. Do not loosen these.
 - When debugging a user showing as non-admin, check (1) the JWT claims on the Jazz session, (2) whether the GitHub login matches `ADMIN_GITHUB_USERNAMES`, (3) `user.roles` on the `better_auth_user` row.
+
+## Svelte
+
+You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
+
+## Available Svelte MCP Tools:
+
+### 1. list-sections
+
+Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths.
+When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
+
+### 2. get-documentation
+
+Retrieves full documentation content for specific sections. Accepts single or multiple sections.
+After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
+
+### 3. svelte-autofixer
+
+Analyzes Svelte code and returns issues and suggestions.
+You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
 
 ### SvelteKit Patterns
 

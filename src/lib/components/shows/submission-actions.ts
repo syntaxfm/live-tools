@@ -4,25 +4,20 @@ import type { AudienceSubmission } from '$lib/schema';
 
 interface FeatureAudienceSubmissionOptions {
 	db: Db;
-	is_admin: boolean;
 	showId: string;
 	submission: AudienceSubmission;
 }
 
 interface ClearFeaturedSubmissionOptions {
 	db: Db;
-	is_admin: boolean;
 	showId: string;
 }
 
 export async function featureAudienceSubmission({
 	db,
-	is_admin,
 	showId,
 	submission
 }: FeatureAudienceSubmissionOptions): Promise<void> {
-	assertAdmin(is_admin);
-
 	if (submission.status !== 'approved') {
 		throw new Error('Only approved submissions can be featured');
 	}
@@ -42,11 +37,8 @@ export async function featureAudienceSubmission({
 
 export async function clearFeaturedSubmission({
 	db,
-	is_admin,
 	showId
 }: ClearFeaturedSubmissionOptions): Promise<void> {
-	assertAdmin(is_admin);
-
 	await unfeatureShowSubmissions(db, showId);
 }
 
@@ -68,10 +60,4 @@ async function unfeatureShowSubmissions(
 					.wait({ tier: 'global' })
 			)
 	);
-}
-
-function assertAdmin(is_admin: boolean): void {
-	if (!is_admin) {
-		throw new Error('Admin access required');
-	}
 }

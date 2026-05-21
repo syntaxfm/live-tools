@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { getDb } from 'jazz-tools/svelte';
 	import { onDestroy } from 'svelte';
-	import { getLowerThirdTitle, LOWER_THIRD_DISPLAY_MS } from '$lib/utils/lower-thirds';
+	import {
+		getLowerThirdTitle,
+		HIDDEN_LOWER_THIRD_SHOW_HOST_ID,
+		LOWER_THIRD_DISPLAY_MS
+	} from '$lib/utils/lower-thirds';
 	import { app, type Show, type ShowHost } from '$lib/schema';
 
 	let {
@@ -15,7 +19,6 @@
 	const db = getDb();
 	const hosts = $derived(show.showHostsViaShow);
 	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
-	const HIDDEN_LOWER_THIRD_SHOW_HOST_ID = '00000000-0000-4000-8000-000000000001';
 
 	let error = $state<string | null>(null);
 	let pendingHostId = $state<string | null>(null);

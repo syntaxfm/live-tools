@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { type AudienceSubmission, type Show, type SubmissionVote } from '$lib/schema';
-	import { getSession } from 'jazz-tools/svelte';
+	import { app, type AudienceSubmission, type Show, type SubmissionVote } from '$lib/schema';
+	import { getDb, getSession } from 'jazz-tools/svelte';
 	import { flip } from 'svelte/animate';
 
 	let {
@@ -13,11 +13,14 @@
 		};
 	} = $props();
 
+	const db = getDb();
 	const session = getSession();
 	let pendingVoteSubmissionId = $state<string | null>(null);
 	let error = $state<string | null>(null);
 
-	async function handleVote(submission: AudienceSubmission): Promise<void> {
+	async function handleVote(
+		submission: AudienceSubmission & { submissionVotesViaSubmission: SubmissionVote[] }
+	): Promise<void> {
 		if (
 			!session?.user_id ||
 			submission.authorId === session.user_id ||
@@ -25,12 +28,25 @@
 		) {
 			return;
 		}
-		// TODO handle voting
+
+		const existing = submission.submissionVotesViaSubmission.find(
+			(vote) => vote.voterId === session.user_id
+		);
 
 		pendingVoteSubmissionId = submission.id;
 		error = null;
 
 		try {
+			if (existing) {
+				db.delete(app.submissionVotes, existing.id);
+			} else {
+				db.insert(app.submissionVotes, {
+					showId: submission.showId,
+					submissionId: submission.id,
+					voterId: session.user_id,
+					createdAt: new Date()
+				});
+			}
 		} catch (caughtError) {
 			console.error('Unable to vote on audience submission', caughtError);
 			error = 'Unable to vote';

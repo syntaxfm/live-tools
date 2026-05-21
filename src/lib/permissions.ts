@@ -82,8 +82,20 @@ export const permissions = s.definePermissions(
 		policy.audienceSubmissions.allowDelete.where(is_admin);
 
 		policy.submissionVotes.allowRead.where(canReadShow);
-		policy.submissionVotes.allowInsert.never();
+		policy.submissionVotes.allowInsert.where((vote) =>
+			allOf([
+				is_logged_in,
+				not_banned,
+				{ voterId: session.user_id },
+				policy.shows.exists.where({ id: vote.showId, status: 'live' }),
+				policy.audienceSubmissions.exists.where({
+					id: vote.submissionId,
+					status: 'approved',
+					authorId: { ne: session.user_id }
+				})
+			])
+		);
 		policy.submissionVotes.allowUpdate.never();
-		policy.submissionVotes.allowDelete.where(is_admin);
+		policy.submissionVotes.allowDelete.where(anyOf([is_admin, { voterId: session.user_id }]));
 	}
 );
