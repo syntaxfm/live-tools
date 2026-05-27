@@ -36,6 +36,10 @@ _Avoid_: Like, upvote, score.
 Admin curation that lifts an **Audience Submission** into the on-air overlay. Distinct from a **Vote**: featuring is editorial, voting is audience signal.
 _Avoid_: Highlight, pin.
 
+**Ban** (verb / `banned` flag on the user):
+An **Admin** action that bars a viewer from creating **Audience Submissions** or casting **Votes**. A banned viewer can still read; only their writes are refused. Banning takes effect immediately, including mid-live. The bar is per-user and global (not per-show). Eligibility to be banned is just being any viewer; the **Admin** is the only role that can ban or unban.
+_Avoid_: Block, mute, kick.
+
 **Overlay**:
 A transparent, 1920×1080 browser route designed to be loaded as an OBS browser source. Reads Jazz data the same way the app does — no separate data path.
 _Avoid_: Scene, widget.
@@ -59,3 +63,4 @@ _Avoid_: Show, push, send.
 
 - "host" was overloaded across (1) the `host` role on `better_auth_user`, (2) the `showHosts` table, and (3) the `/host/` route group. Resolved: **Host** = the role/eligibility, **Show Host** = the per-show assignment row. The `/host/` route serves the prep UI for users who are eligible (i.e. carry the role).
 - A prior **Vote** design stored a `value` field on each row. Resolved: votes are now set-membership only — no `value` column. Do not reintroduce one.
+- **Overlay data path — planned change, do not apply until built.** The **Overlay** entry above ("reads Jazz data the same way the app does — no separate data path") describes the current Jazz architecture. The planned Cloudflare migration (`docs/jazz-to-cloudflare-migration.md`) makes overlays read-only WebSocket clients of a per-show Durable Object — a *separate* path from how the console reads durable data. When it lands, this glossary needs a new distinction the team is already using: **Registry** (durable, cross-show data: shows list, hosts, host links, auth — lives in D1) vs **Room State** (one live show's ephemeral state: ticker, lower-third, submissions, votes, featured — lives in that show's Durable Object). At that point rewrite the **Overlay** entry and retire the **Broadcast** entry's sentinel-UUID clause (the sentinel from `docs/adr/0001` only existed to work around Jazz's null-propagation; the DO clears reliably).
