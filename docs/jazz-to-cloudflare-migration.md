@@ -1,6 +1,30 @@
 # Migrate off Jazz to a Cloudflare-native stack
 
-Status: planned (not started). Owner: Scott.
+Status: **done.** Owner: Scott. Jazz is fully removed; the app runs on
+`adapter-cloudflare` + Workers + per-show Durable Objects + D1, verified end to end under
+`wrangler dev` (real local D1, real local DOs) via a headless browser.
+
+## Deviations from the original plan (all intentional, all verified)
+
+- **Raw Durable Objects + the WebSocket Hibernation API instead of PartyServer.** ADR 0002's
+  requirements — `serializeAttachment()`, Alarm-based auto-hide, no in-DO timers — are the raw
+  hibernation primitives PartyServer wraps; using them directly is more transparent, adds zero
+  dependencies (serving the bus-factor goal), and matches the ADR's vocabulary.
+- **The dev/verification loop is `wrangler dev` against `pnpm build`, not `vite dev` with
+  `@cloudflare/vite-plugin`.** Exporting Durable Object classes from a SvelteKit worker needs a
+  custom worker entry, which the released `adapter-cloudflare` (pre `sveltejs/kit#15627`, still
+  draft) cannot reconcile with the plugin's `vite dev`. `wrangler dev` against the build gives
+  the same real workerd + real local D1 + real local DOs the plan required (it is named as the
+  parity check), so every behavior gate is met; only Vite HMR is given up. The plugin was removed
+  as unused. When kit#15627 ships, re-adding it for the inner loop is the path.
+- **Custom worker entry via two wrangler configs.** `adapter-cloudflare` writes its worker to its
+  config's `main`, so `wrangler.adapter.jsonc` (adapter output) is kept distinct from
+  `wrangler.jsonc` (`main = src/worker.ts`, the entry that re-exports the DOs and wraps Sentry).
+- **The DO re-sends a full pre-shaped snapshot on every change** rather than diffing patches —
+  room state is small; this is a simpler implementation of the same observable behavior.
+- **`audienceSubmissionsOpen` and the active lower-third live in the DO** (room state), not D1;
+  D1's `shows` keeps `status` for atomic single-live enforcement. Submission rows carry no
+  denormalised author name (no current overlay renders one).
 
 ## Why
 

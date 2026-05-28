@@ -1,6 +1,6 @@
 # Pole
 
-Live-show production tooling: a show-runner app plus OBS browser-source overlays that read the same Jazz database.
+Live-show production tooling: a show-runner app plus OBS browser-source overlays. Durable, cross-show data (the **Registry**) lives in D1; one live show's ephemeral **Room State** lives in a per-show Durable Object that overlays and the homepage read over WebSockets.
 
 ## Language
 
@@ -9,11 +9,11 @@ A scheduled or in-progress broadcast. Has a status of `draft`, `live`, or `ended
 _Avoid_: Episode, stream, event.
 
 **Audience Submissions Window**:
-A per-show admin toggle (`audienceSubmissionsOpen`) that controls whether viewers can post new **Audience Submissions**. Independent of show status — submissions can be closed mid-live for pacing.
+A per-show admin toggle (the DO's `submissionsOpen` **Room State**) that controls whether viewers can post new **Audience Submissions**. Independent of show status — submissions can be closed mid-live for pacing.
 _Avoid_: Submission state, intake mode.
 
 **Admin**:
-A user with full write access to app data. Identity is determined by GitHub login matching `ADMIN_GITHUB_USERNAMES`; the JWT carries `claims.is_admin` and Jazz permissions key off that claim.
+A user with full write access to app data. Identity is determined by GitHub login matching `ADMIN_GITHUB_USERNAMES`; the JWT carries `claims.is_admin`. Registry writes gate on it in SvelteKit form actions; room writes gate on it in the Durable Object (which verifies the JWT against the live JWKS).
 _Avoid_: Owner, operator.
 
 **Host**:
@@ -29,7 +29,7 @@ A link (post or tool) submitted by a viewer during a live show, pending admin ap
 _Avoid_: Suggestion, contribution.
 
 **Vote**:
-A viewer's endorsement of an **Audience Submission**, modeled as the _existence_ of a `submissionVotes` row. There is no vote value or weight — the row is the vote. Unvoting is row deletion. Planned but not wired in the UI yet.
+A viewer's endorsement of an **Audience Submission**, modeled as set membership — the _existence_ of a `(submissionId, voterId)` pair in the show's **Room State**. There is no vote value or weight. Unvoting removes the pair. A viewer may not vote on their own submission, and at most once per submission; counts update in realtime.
 _Avoid_: Like, upvote, score.
 
 **Feature** (verb / `isFeatured` flag):
@@ -41,15 +41,23 @@ An **Admin** action that bars a viewer from creating **Audience Submissions** or
 _Avoid_: Block, mute, kick.
 
 **Overlay**:
-A transparent, 1920×1080 browser route designed to be loaded as an OBS browser source. Reads Jazz data the same way the app does — no separate data path.
+A transparent, 1920×1080 browser route designed to be loaded as an OBS browser source. A stateless, read-only WebSocket client of the live show's per-show Durable Object: it discovers the live show via the singleton **Directory** DO, connects, receives a snapshot, and applies pushed changes. No local database — if OBS clears storage or recreates the source, the overlay reconnects and re-syncs from the DO snapshot.
 _Avoid_: Scene, widget.
 
+**Registry**:
+Durable, cross-show data that lives in D1: the auth tables, the shows list and metadata (including `status`, which D1 enforces single-`live` on atomically), **Show Host** assignments, and host links. Read-heavy and queried across shows. Registry writes are SvelteKit form actions with a server-side **Admin** gate.
+_Avoid_: Database (ambiguous), store.
+
+**Room State**:
+One live show's ephemeral state, owned by that show's per-show Durable Object (its own SQLite): ticker messages, the active **Lower Third**, the **Audience Submissions Window** gate, **Audience Submissions**, **Votes**, and the **Featured** selection. Hot and realtime; fanned out over WebSockets. Room writes are typed messages to the DO, authorized by the verified JWT.
+_Avoid_: Session, cache.
+
 **Lower Third**:
-The on-screen graphic identifying who is currently speaking, anchored in the lower third of the broadcast frame. Pole renders at most one **Show Host** in the **Lower Third** at a time, controlled by `shows.activeLowerThirdShowHostId`.
+The on-screen graphic identifying who is currently speaking, anchored in the lower third of the broadcast frame. Pole renders at most one **Show Host** in the **Lower Third** at a time. The active host is **Room State** (held in the show's Durable Object), not a registry column.
 _Avoid_: Name strap, chyron, bug.
 
 **Broadcast** (verb):
-The act of pushing a **Show Host** to the **Lower Third** overlay by setting `shows.activeLowerThirdShowHostId` to that host's id. Broadcasting a second host overwrites the first. Each broadcast auto-hides after `LOWER_THIRD_DISPLAY_MS` (currently 10s) unless an admin hides it sooner; the hide path writes the sentinel `HIDDEN_LOWER_THIRD_SHOW_HOST_ID` rather than `null` (see `docs/adr/0001-lower-third-sentinel-uuid.md`).
+The act of pushing a **Show Host** to the **Lower Third** overlay — a room message that sets the show DO's active lower-third host and fans it out. Broadcasting a second host overwrites the first. Each broadcast auto-hides after `LOWER_THIRD_DISPLAY_MS` (10s) via a single DO **Alarm** (no in-DO timers) unless an admin hides it sooner. The DO clears the active host reliably, so the `docs/adr/0001` sentinel UUID is retired.
 _Avoid_: Show, push, send.
 
 ## Relationships
@@ -57,10 +65,10 @@ _Avoid_: Show, push, send.
 - A **Show** has zero or more **Show Hosts**; each **Show Host** references one **Host**.
 - Today, every **Admin** is also a **Host** (the role is granted on sign-in). A **Host** is not automatically a **Show Host** of any **Show**.
 - An **Audience Submission** belongs to one **Show** and one viewer (any logged-in, non-banned user).
-- An **Overlay** is a read-only view of one **Show**'s state.
+- An **Overlay** is a read-only WebSocket view of the live **Show**'s **Room State**.
 
 ## Flagged ambiguities
 
 - "host" was overloaded across (1) the `host` role on `better_auth_user`, (2) the `showHosts` table, and (3) the `/host/` route group. Resolved: **Host** = the role/eligibility, **Show Host** = the per-show assignment row. The `/host/` route serves the prep UI for users who are eligible (i.e. carry the role).
 - A prior **Vote** design stored a `value` field on each row. Resolved: votes are now set-membership only — no `value` column. Do not reintroduce one.
-- **Overlay data path — planned change, do not apply until built.** The **Overlay** entry above ("reads Jazz data the same way the app does — no separate data path") describes the current Jazz architecture. The planned Cloudflare migration (`docs/jazz-to-cloudflare-migration.md`) makes overlays read-only WebSocket clients of a per-show Durable Object — a _separate_ path from how the console reads durable data. When it lands, this glossary needs a new distinction the team is already using: **Registry** (durable, cross-show data: shows list, hosts, host links, auth — lives in D1) vs **Room State** (one live show's ephemeral state: ticker, lower-third, submissions, votes, featured — lives in that show's Durable Object). At that point rewrite the **Overlay** entry and retire the **Broadcast** entry's sentinel-UUID clause (the sentinel from `docs/adr/0001` only existed to work around Jazz's null-propagation; the DO clears reliably).
+- **Overlay data path — resolved (Cloudflare migration landed).** Jazz is gone. Overlays are now read-only WebSocket clients of a per-show Durable Object; the **Overlay**, **Registry**, and **Room State** entries above reflect this, and the **Broadcast** sentinel-UUID clause is retired (`docs/adr/0001` is superseded). See `docs/jazz-to-cloudflare-migration.md`.

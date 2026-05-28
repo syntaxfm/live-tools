@@ -1,5 +1,10 @@
 # Use a sentinel UUID for "lower-third hidden" instead of null
 
+> **Status: superseded** by the Jazz→Cloudflare migration. The lower-third's active host is
+> now Room State in the per-show Durable Object, which clears it reliably (a DO Alarm fires
+> the auto-hide). The sentinel UUID and `HIDDEN_LOWER_THIRD_SHOW_HOST_ID` are removed. This
+> ADR is kept for history. Original decision below.
+
 `shows.activeLowerThirdShowHostId` is an optional ref to `showHosts`, so the natural
 encoding of "no host is currently in the lower-third overlay" is `null`. In practice,
 clearing the field to `null` did not propagate reliably for the live broadcast/clear
