@@ -22,7 +22,7 @@ retrofit:
   (`LOWER_THIRD_DISPLAY_MS`, currently 10s): instead of a timer holding the DO awake,
   the broadcast handler sets a single **Alarm** ~10s out. The DO hibernates, wakes once
   when the alarm fires, writes the hide, and hibernates again. A future reader who finds
-  an Alarm doing a 10-second auto-hide should understand it is *because* of hibernation,
+  an Alarm doing a 10-second auto-hide should understand it is _because_ of hibernation,
   not by accident.
 - **Room state lives in DO SQLite, not instance memory.** It must survive hibernation
   and eviction. This is also what makes the snapshot-on-reconnect path cheap and

@@ -1,11 +1,31 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "control",
-	"main": ".svelte-kit/cloudflare/_worker.js",
+	"main": "src/worker.ts",
 	"compatibility_date": "2026-04-16",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "control",
+			"database_id": "0c9fba51-0cc4-436e-89e0-239b319432ca",
+			"migrations_dir": "drizzle/migrations"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{ "name": "SHOW_ROOM", "class_name": "ShowRoom" },
+			{ "name": "SHOW_DIRECTORY", "class_name": "ShowDirectory" }
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["ShowRoom", "ShowDirectory"]
+		}
+	]
 }

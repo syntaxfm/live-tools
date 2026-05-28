@@ -16,7 +16,6 @@
 	const active_hosts = $derived(show.showHostsViaShow);
 	const hosts = new QuerySubscription(app.better_auth_user.where({ roles: { contains: 'host' } }));
 
-	let isUpdating = $state(false);
 	let pendingHostIds = $state<readonly string[] | null>(null);
 
 	const selectedHostIds = $derived(pendingHostIds ?? active_hosts.map((host) => host.hostId));

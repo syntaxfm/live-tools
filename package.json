@@ -12,12 +12,17 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"auth:schema": "better-auth generate --config ./src/lib/server/auth.ts --output ./src/lib/schema-better-auth/schema.ts",
-		"auth:validate": "jazz-tools validate",
-		"db:reset": " rm -rf ./node_modules/.cache/jazz-dev-server"
+		"auth:schema": "better-auth generate --config ./src/lib/server/auth.ts --output ./src/lib/server/db/auth-schema.ts",
+		"cf:types": "wrangler types && node scripts/fix-worker-types.mjs",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "wrangler d1 migrations apply control --local",
+		"db:reset": "rm -rf .wrangler/state/v3/d1 && wrangler d1 migrations apply control --local",
+		"cf:dev": "vite build && wrangler dev --port 8787"
 	},
 	"devDependencies": {
 		"@better-auth/cli": "~1.4.21",
+		"@cloudflare/vite-plugin": "^1.39.0",
+		"@cloudflare/workers-types": "^4.20260527.1",
 		"@eslint/compat": "^2.1.0",
 		"@eslint/js": "^10.0.1",
 		"@sveltejs/adapter-auto": "^7.0.1",
@@ -26,24 +31,28 @@
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^25.9.1",
+		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.4.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.17.0",
 		"globals": "^17.6.0",
 		"prettier": "^3.8.1",
-		"prettier-plugin-svelte": "^4.0.0",
+		"prettier-plugin-svelte": "^4.0.1",
 		"svelte": "^5.55.9",
 		"svelte-check": "^4.4.8",
 		"typescript": "^6.0.2",
 		"typescript-eslint": "^8.59.4",
 		"vite": "^8.0.14",
-		"wrangler": "^4.93.1"
+		"wrangler": "^4.95.0"
 	},
 	"dependencies": {
+		"@better-auth/drizzle-adapter": "^1.6.11",
+		"@sentry/cloudflare": "^10.54.0",
 		"@sentry/sveltekit": "^10.53.1",
 		"@sveltejs/adapter-cloudflare": "^7.2.8",
 		"better-auth": "1.6.11",
 		"better-call": "2.0.3",
+		"drizzle-orm": "^0.45.2",
 		"jazz-tools": "2.0.0-alpha.46"
 	},
 	"packageManager": "pnpm@10.33.2"

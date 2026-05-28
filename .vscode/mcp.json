@@ -1,8 +1,8 @@
 {
-  "servers": {
-    "Sentry": {
-      "url": "https://mcp.sentry.dev/mcp/scott-tolinski-projects/live-control",
-      "type": "http"
-    }
-  }
+	"servers": {
+		"Sentry": {
+			"url": "https://mcp.sentry.dev/mcp/scott-tolinski-projects/live-control",
+			"type": "http"
+		}
+	}
 }

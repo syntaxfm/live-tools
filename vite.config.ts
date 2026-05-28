@@ -1,32 +1,10 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { jazzSvelteKit } from 'jazz-tools/dev/sveltekit';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => {
-	const env = loadEnv(mode, process.cwd(), '');
-	const appOrigin = env.ORIGIN || 'http://localhost:7011';
-
-	if (mode === 'development') {
-		process.env.POLE_ENABLE_DEV_LOCAL_FIRST_SUBMISSIONS = 'true';
+export default defineConfig({
+	plugins: [sveltekit()],
+	server: {
+		port: 7011,
+		strictPort: true
 	}
-
-	return {
-		plugins: [
-			jazzSvelteKit({
-				schemaDir: 'src/lib',
-				server: {
-					port: 7012,
-					jwksUrl: `${appOrigin}/api/auth/jwks`
-				}
-			}),
-			sveltekit()
-		],
-		server: {
-			port: 7011,
-			strictPort: true
-		},
-		ssr: {
-			external: ['jazz-tools/backend']
-		}
-	};
 });

@@ -48,7 +48,7 @@ Cloudflare's own guidance: use Durable Objects for real-time coordination with D
 the persistence layer, and DOs for "per-customer SQL state."
 
 - **D1** = durable, cross-cutting, queryable data: the Better Auth tables, plus the
-  show *registry* (the list admins browse, show metadata, host links). Read-heavy,
+  show _registry_ (the list admins browse, show metadata, host links). Read-heavy,
   queried across shows, benefits from D1 read replication.
 - **Per-show Durable Object SQLite** = live room state: ticker, lower-thirds,
   submissions, votes, featured selection. Hot, bursty (live voting), strongly
@@ -78,7 +78,7 @@ the persistence layer, and DOs for "per-customer SQL state."
 - **Dev-only auth bypass so the run needs no human (see
   `docs/adr/0003-dev-only-auth-bypass-for-autonomous-verification.md`).** Every DoD gate
   requires an authenticated session, but GitHub OAuth can't be driven headlessly and the
-  agent needs *two* identities (an **Admin** and a non-admin viewer, to prove the reject
+  agent needs _two_ identities (an **Admin** and a non-admin viewer, to prove the reject
   path). A sign-in path gated on `DEV_AUTH=1` (set only in local `.dev.vars`, never the
   framework `dev` flag, which is `false` under workerd) upserts a seeded admin + seeded
   viewer in D1 and mints a **real** JWT through the existing JWT/JWKS plugin +
@@ -98,13 +98,13 @@ glue), and merge once it's whole. What we **don't** get to do is reorder the wor
 the sequence below is forced by two hard dependencies, not by a desire for
 incrementalism:
 
-- **Auth runs *through* Jazz today** (`jazzAdapter`). The moment `jazz-tools` leaves,
+- **Auth runs _through_ Jazz today** (`jazzAdapter`). The moment `jazz-tools` leaves,
   login has no database and the JWT stops being issued — and that JWT is what the DO
-  verifies on connect. So auth must move to D1 *before* Jazz can be removed.
+  verifies on connect. So auth must move to D1 _before_ Jazz can be removed.
 - **Durable Objects only run on workerd.** No DO can be built or locally tested on
   `adapter-node`, and the per-request `createAuth(env)` D1 binding lives on
   `event.platform.env`, which only exists on the Workers runtime. So the adapter
-  switch is a prerequisite for *both* auth→D1 and the room primitive.
+  switch is a prerequisite for _both_ auth→D1 and the room primitive.
 
 1. **Provision CF resources.** Create the D1 database with `wrangler d1 create <name>`
    and copy the generated `database_id` into a `d1_databases` binding in `wrangler.jsonc`
@@ -118,7 +118,7 @@ incrementalism:
    Not a "deploy" step. Use `@cloudflare/vite-plugin` so `vite dev` runs the worker on
    workerd with **real** local D1, **real** local DOs, and HMR — one command for both
    iteration and verification (the DO/WS primitive is the #1 risk, so DOs must be real in
-   the *inner* loop, not just a final smoke test). `wrangler dev` against the `pnpm build`
+   the _inner_ loop, not just a final smoke test). `wrangler dev` against the `pnpm build`
    output remains only as a final runtime-parity check. Also in this step: **port server
    Sentry to `@sentry/cloudflare`** (wrap the worker) and delete the Node-only
    `instrumentation.server.ts` + the `experimental.instrumentation/tracing.server`
@@ -133,8 +133,8 @@ incrementalism:
    includes it in the tsconfig. The D1 schema is the **better-auth-generated** auth tables
    (`auth:schema` repointed to `better-auth generate` for the Drizzle adapter) **plus a
    hand-authored registry schema** (`shows`, `showHosts`, `hostLinks`); `drizzle-kit
-   generate` emits SQL applied to local D1 with `wrangler d1 migrations apply <DB>
-   --local`. Repoint `db:reset` from the Jazz cache to resetting local D1. Drop the
+generate` emits SQL applied to local D1 with `wrangler d1 migrations apply <DB>
+--local`. Repoint `db:reset` from the Jazz cache to resetting local D1. Drop the
    `auth:validate` (`jazz-tools validate`) script. **Also build the dev-auth bypass here**
    (it depends on Better Auth being on D1) — seed the admin + viewer users and the
    `DEV_AUTH`-gated sign-in; it is consumed by the verification from step 4 onward.
@@ -175,7 +175,7 @@ These came out of a grilling session and are the parts the original sketch omitt
   host-name-denormalized list). The client store exposes plain reactive room state;
   components read fields, no `.where()/.orderBy()` at call sites. Overlays carry zero
   app logic. **Per-consumer shaping must preserve today's read-visibility rules** — what
-  Jazz permissions currently allow each viewer to *read*: approved submissions to viewers,
+  Jazz permissions currently allow each viewer to _read_: approved submissions to viewers,
   the full set to admins (and the author's own pending submission, which the homepage
   relies on to show "your submission" state). The DO decides visibility per connection
   from its attached auth context; it does not send a viewer rows they couldn't read today.
@@ -215,7 +215,7 @@ These came out of a grilling session and are the parts the original sketch omitt
   `status→live` form action, after the atomic D1 write), the DO pulls its registry-derived
   cache from D1 **once** into its own SQLite — assigned hosts + display names, current ban
   list. Without this the DO would render empty host names until someone edited. (2)
-  **Write-through afterward.** A registry change while live writes D1 *and* pushes the
+  **Write-through afterward.** A registry change while live writes D1 _and_ pushes the
   delta to the live DO, which mirrors it in SQLite: a host rename/reassignment, or a ban
   (`{ban|unban: userId}`) which the DO applies so the user's next submit/vote is
   blocked/allowed immediately. The hot path reads only the DO's local SQLite, never D1.
@@ -235,7 +235,7 @@ Exactly two one-time costs are allowed; anything beyond them is a regression:
    again. Admin status re-derives from `ADMIN_GITHUB_USERNAMES` on sign-in.
 2. **Re-create standing app data.** `shows`, `showHosts`, `hostLinks` start empty (no
    Jazz Cloud export). After cutover the operator re-creates any upcoming show and
-   re-assigns its hosts once. Host *eligibility* repopulates automatically — the `host`
+   re-assigns its hosts once. Host _eligibility_ repopulates automatically — the `host`
    role is granted on admin sign-in.
 
 No other user-visible behavior may change: same overlays, same operator flows, same
@@ -259,7 +259,7 @@ permissions.
   change, **a viewer (non-admin) socket's write rejected** (use the seeded viewer), and —
   close the socket / clear storage, reconnect — full re-sync from the DO snapshot.
 - Auth claims: inspect the issued JWT for `{ id, name, email, image, githubUsername,
-  is_admin }`; the seeded admin gets `is_admin: true` (from its `roles`), the seeded
+is_admin }`; the seeded admin gets `is_admin: true` (from its `roles`), the seeded
   viewer `false`. The real GitHub path and `ADMIN_GITHUB_USERNAMES` derivation are carried
   over unchanged but are not exercised headlessly.
 
@@ -278,7 +278,7 @@ permissions.
    module-level singleton, no `jazzAdapter` import); Better Auth tables exist in D1 via
    the Drizzle / `drizzle-orm/d1` adapter (`drizzle-orm` + `drizzle-kit` added,
    `drizzle.config.ts` present, migrations applied to local D1 via `wrangler d1 migrations
-   apply`); sign-in, sign-out, and JWT claims verify end to end **through the dev-auth
+apply`); sign-in, sign-out, and JWT claims verify end to end **through the dev-auth
    bypass**, which exists and seeds an admin + a viewer. The `auth:schema` script
    regenerates the Drizzle schema; the `auth:validate` (`jazz-tools validate`) script is
    removed.

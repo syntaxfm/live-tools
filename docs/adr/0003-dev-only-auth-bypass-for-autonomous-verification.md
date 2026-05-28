@@ -25,7 +25,7 @@ Two guardrails make this safe to live in the codebase:
 - **Gated on an explicit env var, not the framework `dev` flag.** The bypass activates
   only when `DEV_AUTH=1`, a variable that lives solely in local `.dev.vars` and is set in
   no deployed environment. SvelteKit's `import { dev } from '$app/environment'` is
-  deliberately *not* used as the gate, because it is `false` under `wrangler dev`
+  deliberately _not_ used as the gate, because it is `false` under `wrangler dev`
   (workerd runs a production build) — which is exactly the runtime the agent verifies
   against, so a `dev`-flag gate would be both unreliable and inconsistent between
   `vite dev` and `wrangler dev`. With the var absent, the bypass route does not exist

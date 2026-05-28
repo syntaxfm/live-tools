@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-cloudflare';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -10,26 +10,26 @@ const config = {
 		}
 	},
 	kit: {
-		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-		adapter: adapter(),
+		// `config` points the adapter at a wrangler file whose `main` is the adapter's own
+		// output path, kept distinct from the real wrangler.jsonc `main` (src/worker.ts).
+		adapter: adapter({ config: 'wrangler.adapter.jsonc' }),
 
 		typescript: {
 			config: (config) => ({
 				...config,
-				include: [...config.include, '../drizzle.config.ts']
+				include: [...config.include, '../drizzle.config.ts', '../worker-configuration.d.ts'],
+				// src/worker.ts statically imports the adapter's built worker (and its whole
+				// SSR graph). Excluding it — plus the build output dirs — keeps svelte-check
+				// from type-checking generated JS. The entry is compiled by wrangler/esbuild;
+				// the Durable Object types it re-exports are checked at their source files.
+				exclude: [
+					...(config.exclude ?? []),
+					'../src/worker.ts',
+					'../.svelte-kit/cloudflare',
+					'../.svelte-kit/cloudflare-tmp',
+					'../.svelte-kit/output'
+				]
 			})
-		},
-
-		experimental: {
-			tracing: {
-				server: true
-			},
-
-			instrumentation: {
-				server: true
-			}
 		}
 	}
 };

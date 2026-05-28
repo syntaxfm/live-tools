@@ -7,8 +7,6 @@
 	$inspect(users.current);
 </script>
 
-<button onclick={() => window?.__jazz?.clearStorage()}>Clear Data</button>
-
 <div class="table">
 	<table>
 		<thead>
@@ -19,7 +17,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each users.current as user}
+			{#each users.current as user (user.id)}
 				<tr>
 					<td>{user.id}</td>
 					<td>{user.githubUsername}</td>

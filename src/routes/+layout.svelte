@@ -7,9 +7,8 @@
 
 	let { children } = $props();
 
-	let client = $state<ReturnType<typeof createJazzClient> | null>(null);
 	const jwt = await authClient.token();
-	client = createJazzClient({
+	const client = createJazzClient({
 		env: dev ? 'dev' : 'prod',
 		appId: env.PUBLIC_JAZZ_APP_ID,
 		jwtToken: jwt?.data?.token ?? undefined,

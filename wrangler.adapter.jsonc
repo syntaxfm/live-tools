@@ -1,0 +1,17 @@
+// Config consumed ONLY by @sveltejs/adapter-cloudflare (see svelte.config.js). The
+// adapter writes its generated SvelteKit worker to this file's `main`. The real
+// wrangler CLI uses wrangler.jsonc, whose `main` is src/worker.ts — our custom entry
+// that imports the file below, re-exports the Durable Objects, and wraps Sentry.
+// Keeping the two `main` values distinct is what lets the SvelteKit worker and the
+// Durable Objects coexist with the current (pre-#15627) released adapter.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "control",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-04-16",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	}
+}
