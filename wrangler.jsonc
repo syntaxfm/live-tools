@@ -5,6 +5,8 @@
 	"main": "src/worker.ts",
 	"compatibility_date": "2026-04-16",
 	"compatibility_flags": ["nodejs_compat"],
+	// Don't wipe dashboard-set plaintext vars on deploy (secrets are never wiped regardless).
+	"keep_vars": true,
 	"observability": {
 		"enabled": true
 	},
@@ -15,7 +17,8 @@
 	// Production origin (Better Auth baseURL, JWT issuer/audience, and the DO's JWKS fetch).
 	// Local dev overrides this with ORIGIN in .dev.vars (http://localhost:8787).
 	"vars": {
-		"ORIGIN": "https://control.syntax.fm"
+		"ORIGIN": "https://control.syntax.fm",
+		"ADMIN_GITHUB_USERNAMES": "stolinski,wesbos,w3cj,randyrektor"
 	},
 	"d1_databases": [
 		{
