@@ -1,6 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "control",
+	"account_id": "3ebe60b8bb090efeda7702aff60769bb",
 	"main": "src/worker.ts",
 	"compatibility_date": "2026-04-16",
 	"compatibility_flags": ["nodejs_compat"],
@@ -8,11 +9,16 @@
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
+	// Production origin (Better Auth baseURL, JWT issuer/audience, and the DO's JWKS fetch).
+	// Local dev overrides this with ORIGIN in .dev.vars (http://localhost:8787).
+	"vars": {
+		"ORIGIN": "https://control.syntax.fm"
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "control",
-			"database_id": "0c9fba51-0cc4-436e-89e0-239b319432ca",
+			"database_id": "4ee967fa-4f00-40ac-8d37-b4ff7a98431c",
 			"migrations_dir": "drizzle/migrations"
 		}
 	],
