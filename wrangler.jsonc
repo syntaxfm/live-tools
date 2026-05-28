@@ -5,6 +5,9 @@
 	"main": "src/worker.ts",
 	"compatibility_date": "2026-04-16",
 	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
 	"assets": {
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
