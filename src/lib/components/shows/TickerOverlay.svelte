@@ -1,18 +1,12 @@
 <script lang="ts">
 	import { flip } from 'svelte/animate';
 
-	import type { Show, TickerMessage } from '$lib/schema';
+	import type { TickerMessageView } from '$lib/components/shows/room-protocol';
 	import { getTickerLoopMessages } from '$lib/utils/ticker-messages';
 	import { tickerScrollDuration } from './ticker-scroll';
 
-	interface Props {
-		show: Show & {
-			tickerMessagesViaShow: TickerMessage[];
-		};
-	}
-
-	let { show }: Props = $props();
-	const loopMessages = $derived(getTickerLoopMessages(show.tickerMessagesViaShow));
+	let { messages }: { messages: TickerMessageView[] } = $props();
+	const loopMessages = $derived(getTickerLoopMessages(messages));
 </script>
 
 <div class="ticker-stage">

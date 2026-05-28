@@ -17,6 +17,17 @@ export default Sentry.withSentry(
 	}),
 	{
 		fetch(request, env, ctx) {
+			// Route WebSocket upgrades straight to the Durable Objects; everything else is
+			// the SvelteKit app. The DOs own all live room state + fan-out.
+			const url = new URL(request.url);
+			if (url.pathname === '/_ws/directory') {
+				return env.SHOW_DIRECTORY.get(env.SHOW_DIRECTORY.idFromName('live')).fetch(request);
+			}
+			const roomMatch = url.pathname.match(/^\/_ws\/room\/(.+)$/);
+			if (roomMatch) {
+				const showId = decodeURIComponent(roomMatch[1]);
+				return env.SHOW_ROOM.get(env.SHOW_ROOM.idFromName(showId)).fetch(request);
+			}
 			return sv.fetch(request, env, ctx);
 		}
 	} satisfies ExportedHandler<Env>

@@ -1,87 +1,44 @@
 <script lang="ts">
-	import { app, type AudienceSubmission, type Show, type SubmissionVote } from '$lib/schema';
-	import { getDb, getSession } from 'jazz-tools/svelte';
 	import { flip } from 'svelte/animate';
+	import { getClientSession } from '$lib/session.svelte';
+	import type { SubmissionView } from '$lib/components/shows/room-protocol';
+	import type { LiveShowStore } from '$lib/components/shows/room.svelte';
 
-	let {
-		show
-	}: {
-		show: Show & {
-			audienceSubmissionsViaShow: (AudienceSubmission & {
-				submissionVotesViaSubmission: SubmissionVote[];
-			})[];
-		};
-	} = $props();
+	let { room }: { room: LiveShowStore } = $props();
 
-	const db = getDb();
-	const session = getSession();
-	let pendingVoteSubmissionId = $state<string | null>(null);
-	let error = $state<string | null>(null);
+	const session = getClientSession();
+	const userId = $derived(session.userId);
+	const canParticipate = $derived(room.snapshot?.canParticipate ?? false);
+	const approved = $derived(
+		(room.snapshot?.submissions ?? []).filter((submission) => submission.status === 'approved')
+	);
 
-	async function handleVote(
-		submission: AudienceSubmission & { submissionVotesViaSubmission: SubmissionVote[] }
-	): Promise<void> {
-		if (
-			!session?.user_id ||
-			submission.authorId === session.user_id ||
-			pendingVoteSubmissionId === submission.id
-		) {
+	function toggleVote(submission: SubmissionView): void {
+		if (!canParticipate || submission.authorId === userId) {
 			return;
 		}
-
-		const existing = submission.submissionVotesViaSubmission.find(
-			(vote) => vote.voterId === session.user_id
-		);
-
-		pendingVoteSubmissionId = submission.id;
-		error = null;
-
-		try {
-			if (existing) {
-				db.delete(app.submissionVotes, existing.id);
-			} else {
-				db.insert(app.submissionVotes, {
-					showId: submission.showId,
-					submissionId: submission.id,
-					voterId: session.user_id,
-					createdAt: new Date()
-				});
-			}
-		} catch (caughtError) {
-			console.error('Unable to vote on audience submission', caughtError);
-			error = 'Unable to vote';
-		} finally {
-			pendingVoteSubmissionId = null;
-		}
+		room.send({ type: 'vote:set', submissionId: submission.id, voted: !submission.hasVoted });
 	}
 </script>
 
-{#if show.audienceSubmissionsViaShow}
+{#if approved.length}
 	<ul class="submission-list">
-		{#each show.audienceSubmissionsViaShow as submission (submission.id)}
-			{@const canVote = Boolean(
-				session?.user_id &&
-				submission.authorId !== session.user_id &&
-				session.authMode === 'external'
-			)}
-			{@const vote_count = submission.submissionVotesViaSubmission.length}
-			{@const user_voted = submission.submissionVotesViaSubmission.find(
-				(vote) => vote.voterId === session?.user_id
-			)}
+		{#each approved as submission (submission.id)}
+			{@const canVote = canParticipate && submission.authorId !== userId}
 			<li animate:flip>
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a class="submission-link" href={submission.url} rel="noreferrer" target="_blank"
-					>{submission.title || submission.url}</a
-				>
+				<a class="submission-link" href={submission.url} rel="noreferrer" target="_blank">
+					{submission.title || submission.url}
+				</a>
 				<p class="inline-actions">
 					<button
-						data-variant={!user_voted && canVote ? 'primary' : undefined}
-						disabled={pendingVoteSubmissionId === submission.id}
+						data-variant={!submission.hasVoted && canVote ? 'primary' : undefined}
+						disabled={!canVote}
 						type="button"
-						onclick={() => handleVote(submission)}
+						onclick={() => toggleVote(submission)}
 					>
-						<span aria-label={`${vote_count} votes`}>{vote_count}</span>
-						{user_voted ? 'UnVote' : 'Vote'}
+						<span aria-label={`${submission.voteCount} votes`}>{submission.voteCount}</span>
+						{submission.hasVoted ? 'UnVote' : 'Vote'}
 					</button>
 				</p>
 			</li>
@@ -91,8 +48,8 @@
 	<h3>Submissions incoming...</h3>
 {/if}
 
-{#if error}
-	<p class="status" data-state="warning">{error}</p>
+{#if room.error}
+	<p class="status" data-state="warning">{room.error}</p>
 {/if}
 
 <style>
@@ -105,30 +62,22 @@
 	}
 
 	.submission-list > li {
-		gap: 0.625rem;
-		border-bottom: 1px solid var(--color-border-subtle);
-		font-size: 1.1rem;
-		font-weight: 500;
-	}
-
-	.submission-list > li:last-child {
-		border-bottom: 0;
-	}
-
-	li {
 		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.625rem;
+		padding: 0.625rem 0.75rem;
 		border: 1px solid var(--color-border-subtle);
 		border-radius: var(--radius-lg);
 		background: var(--color-surface);
 		box-shadow: var(--shadow-raised-md);
-		padding: 0.625rem 0.75rem;
-		align-items: center;
-		justify-content: space-between;
+		font-size: 1.1rem;
+		font-weight: 500;
 	}
 
 	a {
-		text-decoration: none;
 		color: white;
+		text-decoration: none;
 	}
 
 	.inline-actions {

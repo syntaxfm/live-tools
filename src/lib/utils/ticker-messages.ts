@@ -1,15 +1,15 @@
-import type { TickerMessage } from '$lib/schema';
+import type { TickerMessageView } from '$lib/components/shows/room-protocol';
 
 const MINIMUM_LOOP_ITEMS = 8;
 
-function compareTickerMessagesByPosition(first: TickerMessage, second: TickerMessage): number {
-	return (
-		new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime() ||
-		first.id.localeCompare(second.id)
-	);
+function compareTickerMessagesByPosition(
+	first: TickerMessageView,
+	second: TickerMessageView
+): number {
+	return first.createdAt - second.createdAt || first.id.localeCompare(second.id);
 }
 
-export function getTickerLoopMessages(messages: readonly TickerMessage[]): TickerMessage[] {
+export function getTickerLoopMessages(messages: readonly TickerMessageView[]): TickerMessageView[] {
 	const sortedMessages = [...messages].sort(compareTickerMessagesByPosition);
 
 	if (!sortedMessages.length) {

@@ -1,74 +1,27 @@
 <script lang="ts">
-	import { getDb, getSession } from 'jazz-tools/svelte';
-	import { assertAdmin, updateAudienceSubmissionGate } from '$lib/components/shows/show-actions';
-	import { formatShowDate, parseShowStatus, SHOW_STATUSES } from '$lib/utils/shows';
-	import { app, type Show } from '$lib/schema';
+	import { enhance } from '$app/forms';
+	import { formatShowDate, SHOW_STATUSES } from '$lib/utils/shows';
+	import type { Show } from '$lib/components/shows/registry-types';
+	import type { ShowRoomStore } from '$lib/components/shows/room.svelte';
 
-	let {
-		show
-	}: {
-		show: Show;
-	} = $props();
-
-	const db = getDb();
-	const session = getSession();
-	const is_admin = $derived(session?.claims.is_admin) as boolean;
+	// `show` is registry metadata (status, dates) edited via a form action; the
+	// submissions-open gate is live room state toggled over the room socket.
+	let { show, room }: { show: Show; room: ShowRoomStore } = $props();
 
 	let error = $state<string | null>(null);
-	let pendingControl = $state<'status' | 'submissions' | null>(null);
+	let pending = $state(false);
 
-	async function handleStatusChange(event: Event): Promise<void> {
-		assertAdmin(is_admin);
-
+	function submitOnChange(event: Event): void {
 		const select = event.currentTarget;
-
-		if (!(select instanceof HTMLSelectElement)) {
-			error = 'Invalid status control';
-			return;
-		}
-
-		pendingControl = 'status';
-		error = null;
-
-		try {
-			const status = parseShowStatus(select.value);
-			await db
-				.update(app.shows, show.id, {
-					status,
-					endedAt: status === 'ended' ? new Date() : null
-				})
-				.wait({ tier: 'global' });
-		} catch (caughtError) {
-			console.error('Unable to update show status', caughtError);
-			error = 'Unable to update show status';
-		} finally {
-			pendingControl = null;
+		if (select instanceof HTMLSelectElement) {
+			select.form?.requestSubmit();
 		}
 	}
 
-	async function handleAudienceSubmissionsChange(event: Event): Promise<void> {
+	function handleSubmissionsChange(event: Event): void {
 		const input = event.currentTarget;
-
-		if (!(input instanceof HTMLInputElement)) {
-			error = 'Invalid submissions control';
-			return;
-		}
-
-		pendingControl = 'submissions';
-		error = null;
-
-		try {
-			await updateAudienceSubmissionGate({
-				db,
-				is_admin,
-				isOpen: input.checked,
-				showId: show.id
-			});
-		} catch (caughtError) {
-			console.error('Unable to update audience submissions', caughtError);
-			error = 'Unable to update submissions';
-		} finally {
-			pendingControl = null;
+		if (input instanceof HTMLInputElement) {
+			room.send({ type: 'submissions:setOpen', open: input.checked });
 		}
 	}
 </script>
@@ -76,30 +29,39 @@
 <section class="surface" data-depth="medium">
 	<h2>{formatShowDate(show.startsAt)}</h2>
 
-	<div class="form-row">
+	<form
+		method="POST"
+		action="?/status"
+		use:enhance={() => {
+			pending = true;
+			error = null;
+			return async ({ result, update }) => {
+				pending = false;
+				if (result.type === 'failure' && typeof result.data?.message === 'string') {
+					error = result.data.message;
+				}
+				await update();
+			};
+		}}
+	>
 		<label class="field">
 			Status
-			<select
-				disabled={pendingControl === 'status'}
-				value={show.status}
-				onchange={handleStatusChange}
-			>
+			<select name="status" value={show.status} disabled={pending} onchange={submitOnChange}>
 				{#each SHOW_STATUSES as status (status)}
 					<option value={status}>{status}</option>
 				{/each}
 			</select>
 		</label>
+	</form>
 
-		<label class="checkbox-field">
-			<input
-				checked={show.audienceSubmissionsOpen}
-				disabled={pendingControl === 'submissions'}
-				type="checkbox"
-				onchange={handleAudienceSubmissionsChange}
-			/>
-			Audience submissions
-		</label>
-	</div>
+	<label class="checkbox-field">
+		<input
+			type="checkbox"
+			checked={room.snapshot?.submissionsOpen ?? false}
+			onchange={handleSubmissionsChange}
+		/>
+		Audience submissions
+	</label>
 
 	{#if show.endedAt}
 		<p class="status" data-state="success">Ended {formatShowDate(show.endedAt)}</p>

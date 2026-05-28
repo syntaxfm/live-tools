@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { getSession } from 'jazz-tools/svelte';
+	import { getClientSession } from '$lib/session.svelte';
 
-	const session = getSession();
-	const is_admin = $derived(session?.claims.is_admin);
+	const session = getClientSession();
+	const is_admin = $derived(session.isAdmin);
 	const pathname = $derived(page.url.pathname);
 </script>
 

@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { QuerySubscription } from 'jazz-tools/svelte';
+	import { onMount } from 'svelte';
 	import TickerOverlay from '$lib/components/shows/TickerOverlay.svelte';
-	import { app } from '$lib/schema';
+	import { LiveShowStore } from '$lib/components/shows/room.svelte';
 
-	const shows = new QuerySubscription(
-		app.shows
-			.where({
-				status: 'live'
-			})
-			.orderBy('startsAt', 'desc')
-			.include({ tickerMessagesViaShow: app.tickerMessages.where({}) })
-	);
+	// Anonymous, read-only. Follows whichever show is live via the directory DO and
+	// re-syncs from the room snapshot on every (re)connect — the OBS-resilient path.
+	const room = new LiveShowStore();
+
+	onMount(() => {
+		room.connect();
+		return () => room.close();
+	});
 </script>
 
-{#if shows.current?.[0]}
-	<TickerOverlay show={shows.current?.[0]} />
+{#if room.snapshot && room.snapshot.ticker.length}
+	<TickerOverlay messages={room.snapshot.ticker} />
 {/if}

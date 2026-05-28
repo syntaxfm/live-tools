@@ -1,115 +1,29 @@
 <script lang="ts">
-	import { getDb } from 'jazz-tools/svelte';
-	import { onDestroy } from 'svelte';
-	import {
-		getLowerThirdTitle,
-		HIDDEN_LOWER_THIRD_SHOW_HOST_ID,
-		LOWER_THIRD_DISPLAY_MS
-	} from '$lib/utils/lower-thirds';
-	import { app, type Show, type ShowHost } from '$lib/schema';
+	import { enhance } from '$app/forms';
+	import { getLowerThirdTitle } from '$lib/utils/lower-thirds';
+	import type { ShowHost } from '$lib/components/shows/registry-types';
+	import type { ShowRoomStore } from '$lib/components/shows/room.svelte';
 
-	let {
-		show
-	}: {
-		show: Show & {
-			showHostsViaShow: ShowHost[];
-		};
-	} = $props();
+	// `hosts` is registry data (the show's assigned hosts + their titles), edited via a form
+	// action. Which host is on-air is live room state; broadcast/hide are room messages and
+	// the DO auto-hides after LOWER_THIRD_DISPLAY_MS via an Alarm.
+	let { hosts, room }: { hosts: ShowHost[]; room: ShowRoomStore } = $props();
 
-	const db = getDb();
-	const hosts = $derived(show.showHostsViaShow);
-	const activeShowHostId = $derived(show?.activeLowerThirdShowHostId ?? null);
+	const activeShowHostId = $derived(room.snapshot?.lowerThird?.showHostId ?? null);
 
-	let error = $state<string | null>(null);
-	let pendingHostId = $state<string | null>(null);
-	let isClearing = $state(false);
-	let autoHideTimer: ReturnType<typeof setTimeout> | null = null;
-
-	onDestroy(() => {
-		clearAutoHideTimer();
-	});
-
-	async function handleTitleChange(event: Event): Promise<void> {
+	function submitOnChange(event: Event): void {
 		const input = event.currentTarget;
-		if (!(input instanceof HTMLInputElement)) {
-			error = 'Invalid title control';
-			return;
-		}
-
-		const host = hosts.find((candidate) => candidate.id === input.dataset.hostId);
-
-		if (!show.id || !host) {
-			error = 'Host not found';
-			return;
-		}
-
-		pendingHostId = host.id;
-		error = null;
-
-		if (host.showId !== show.id) {
-			throw new Error('Host does not belong to show');
-		}
-		db.update(app.showHosts, host.id, {
-			lowerThirdTitle: input.value.trim() || null
-		}).wait({ tier: 'global' });
-
-		pendingHostId = null;
-	}
-
-	async function broadcast(event: Event): Promise<void> {
-		const button = event.currentTarget;
-
-		if (!(button instanceof HTMLButtonElement)) {
-			error = 'Invalid broadcast control';
-			return;
-		}
-		const host = hosts.find((candidate) => candidate.id === button.dataset.hostId);
-		if (!show.id || !host) {
-			error = 'Unable to broadcast';
-			return;
-		}
-		pendingHostId = host.id;
-		error = null;
-
-		try {
-			clearAutoHideTimer();
-			await db
-				.update(app.shows, show.id, {
-					activeLowerThirdShowHostId: host.id
-				})
-				.wait({ tier: 'global' });
-			scheduleAutoHide();
-		} catch (caughtError) {
-			console.error('Unable to broadcast lower third', caughtError);
-			error = 'Unable to broadcast';
-		} finally {
-			pendingHostId = null;
+		if (input instanceof HTMLInputElement) {
+			input.form?.requestSubmit();
 		}
 	}
 
-	async function clearLowerThird(): Promise<void> {
-		clearAutoHideTimer();
-		await db
-			.update(app.shows, show.id, {
-				activeLowerThirdShowHostId: HIDDEN_LOWER_THIRD_SHOW_HOST_ID
-			})
-			.wait({ tier: 'global' });
+	function broadcast(showHostId: string): void {
+		room.send({ type: 'lowerThird:broadcast', showHostId });
 	}
 
-	function scheduleAutoHide(): void {
-		autoHideTimer = setTimeout(() => {
-			autoHideTimer = null;
-			void clearLowerThird();
-		}, LOWER_THIRD_DISPLAY_MS);
-	}
-
-	function clearAutoHideTimer(): void {
-		if (!autoHideTimer) {
-			return;
-		}
-
-		clearTimeout(autoHideTimer);
-		autoHideTimer = null;
+	function hide(): void {
+		room.send({ type: 'lowerThird:hide' });
 	}
 </script>
 
@@ -120,35 +34,34 @@
 		<ul class="lower-third-controls">
 			{#each hosts as host (host.id)}
 				<li data-active={activeShowHostId === host.id}>
-					<label class="field">
-						{host.displayName}
-						<input
-							data-host-id={host.id}
-							disabled={pendingHostId === host.id}
-							placeholder="Title"
-							value={getLowerThirdTitle(host)}
-							onchange={handleTitleChange}
-						/>
-					</label>
+					<form method="POST" action="?/updateHostTitle" use:enhance>
+						<input type="hidden" name="showHostId" value={host.id} />
+						<label class="field">
+							{host.displayName}
+							<input
+								name="title"
+								placeholder="Title"
+								value={getLowerThirdTitle({
+									showHostId: host.id,
+									displayName: host.displayName,
+									lowerThirdTitle: host.lowerThirdTitle
+								})}
+								onchange={submitOnChange}
+							/>
+						</label>
+					</form>
 
 					{#if activeShowHostId === host.id}
-						<button disabled={isClearing} type="button" onclick={clearLowerThird}>Hide</button>
+						<button type="button" onclick={hide}>Hide</button>
 					{:else}
-						<button
-							data-host-id={host.id}
-							disabled={pendingHostId === host.id}
-							type="button"
-							onclick={broadcast}
-						>
-							Broadcast
-						</button>
+						<button type="button" onclick={() => broadcast(host.id)}>Broadcast</button>
 					{/if}
 				</li>
 			{/each}
 		</ul>
 
-		{#if error}
-			<p class="status" data-state="warning">{error}</p>
+		{#if room.error}
+			<p class="status" data-state="warning">{room.error}</p>
 		{/if}
 	{:else}
 		<h2>No hosts</h2>

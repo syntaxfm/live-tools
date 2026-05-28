@@ -1,20 +1,7 @@
-import type { AudienceSubmission } from '$lib/schema';
+import type { SubmissionStatus } from '$lib/components/shows/room-protocol';
 
-export type AudienceSubmissionStatus = AudienceSubmission['status'];
-
-export const AUDIENCE_SUBMISSION_STATUSES: readonly AudienceSubmissionStatus[] = [
+export const AUDIENCE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
 	'pending',
 	'approved',
 	'rejected'
 ];
-
-export function compareAudienceSubmissionsByNewest(
-	first: AudienceSubmission,
-	second: AudienceSubmission
-): number {
-	return getSubmissionTime(second) - getSubmissionTime(first) || second.id.localeCompare(first.id);
-}
-
-function getSubmissionTime(submission: AudienceSubmission): number {
-	return new Date(submission.updatedAt ?? submission.createdAt).getTime();
-}

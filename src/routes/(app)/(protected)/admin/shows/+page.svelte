@@ -1,222 +1,94 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import { getDb, getSession, QuerySubscription } from 'jazz-tools/svelte';
-	import { createShow, deleteShow } from '$lib/components/shows/show-actions';
-	import {
-		formatShowDate,
-		formatShowDateInput,
-		parseShowDateInput,
-		parseShowStatus
-	} from '$lib/utils/shows';
-	import type { ShowStatus } from '$lib/utils/shows';
-	import { app } from '$lib/schema';
+	import { formatShowDate, formatShowDateInput } from '$lib/utils/shows';
 
-	const db = getDb();
-	const session = getSession();
+	let { data } = $props();
 
-	const shows = new QuerySubscription(app.shows.where({}));
-	const hosts = new QuerySubscription(app.better_auth_user.where({ roles: { contains: 'host' } }));
-
-	const user = $derived(session?.claims);
-	const is_admin = $derived(user?.is_admin === true);
 	const defaultShowDate = formatShowDateInput(new Date());
-
-	let deleteError = $state<string | null>(null);
-	let deletingShowId = $state<string | null>(null);
 	let formError = $state<string | null>(null);
-	let isCreating = $state(false);
-
-	async function handleCreateShow(event: SubmitEvent): Promise<void> {
-		event.preventDefault();
-
-		if (!session || !is_admin) {
-			formError = 'Admin access required';
-			return;
-		}
-		const form = event.currentTarget;
-
-		if (!(form instanceof HTMLFormElement)) {
-			formError = 'Invalid form';
-			return;
-		}
-
-		const formData = new FormData(form);
-		const startsAtInput = formData.get('startsAt')?.toString();
-		const statusInput = formData.get('status')?.toString();
-		const hostIds = formData.getAll('hostIds').map((hostId) => hostId.toString());
-
-		if (!startsAtInput) {
-			formError = 'Date required';
-			return;
-		}
-
-		let status: ShowStatus;
-
-		try {
-			status = parseShowStatus(statusInput ?? '');
-		} catch (error) {
-			console.error('Invalid show status', error);
-			formError = 'Invalid status';
-			return;
-		}
-
-		let startsAt: Date;
-
-		try {
-			startsAt = parseShowDateInput(startsAtInput);
-		} catch (error) {
-			console.error('Invalid show date', error);
-			formError = 'Invalid date';
-			return;
-		}
-
-		isCreating = true;
-		formError = null;
-
-		try {
-			const show = await createShow({
-				createdById: session.user_id,
-				db,
-				hosts: hostIds.flatMap((hostId) => {
-					const host = hosts?.current?.find((option) => option.id === hostId);
-					return host ? [host] : [];
-				}),
-				is_admin,
-				startsAt,
-				status
-			});
-
-			await goto(resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`));
-		} catch (error) {
-			console.error('Unable to create show', error);
-			formError = 'Unable to create show';
-		} finally {
-			isCreating = false;
-		}
-	}
-
-	async function handleDeleteShow(event: SubmitEvent): Promise<void> {
-		event.preventDefault();
-
-		if (!is_admin) {
-			deleteError = 'Admin access required';
-			return;
-		}
-
-		const form = event.currentTarget;
-
-		if (!(form instanceof HTMLFormElement)) {
-			deleteError = 'Invalid form';
-			return;
-		}
-
-		const formData = new FormData(form);
-		const showId = formData.get('showId')?.toString();
-		const showLabel = formData.get('showLabel')?.toString() ?? 'this show';
-
-		if (!showId) {
-			deleteError = 'Show required';
-			return;
-		}
-
-		if (!window.confirm(`Delete ${showLabel}?`)) {
-			return;
-		}
-
-		deletingShowId = showId;
-		deleteError = null;
-
-		try {
-			await deleteShow({
-				db,
-				is_admin,
-				showId
-			});
-		} catch (error) {
-			console.error('Unable to delete show', error);
-			deleteError = error instanceof Error ? error.message : 'Unable to delete show';
-		} finally {
-			deletingShowId = null;
-		}
-	}
 </script>
 
 <section class="surface" data-depth="medium">
 	<h1>Manage shows</h1>
 
-	{#if is_admin}
-		<form onsubmit={handleCreateShow}>
-			<div class="form-row">
-				<label class="field">
-					Date
-					<input name="startsAt" required type="date" value={defaultShowDate} />
-				</label>
+	<form
+		method="POST"
+		action="?/create"
+		use:enhance={() => {
+			formError = null;
+			return async ({ result, update }) => {
+				if (result.type === 'failure' && typeof result.data?.message === 'string') {
+					formError = result.data.message;
+				}
+				await update();
+			};
+		}}
+	>
+		<div class="form-row">
+			<label class="field">
+				Date
+				<input name="startsAt" required type="date" value={defaultShowDate} />
+			</label>
 
-				<label class="field">
-					Status
-					<select name="status">
-						<option value="draft">Draft</option>
-						<option value="live">Live</option>
-						<option value="ended">Ended</option>
-					</select>
-				</label>
+			<label class="field">
+				Status
+				<select name="status">
+					<option value="draft">Draft</option>
+					<option value="live">Live</option>
+					<option value="ended">Ended</option>
+				</select>
+			</label>
 
-				<button disabled={isCreating} type="submit">Create</button>
-			</div>
+			<button type="submit">Create</button>
+		</div>
 
-			{#each hosts.current as host (host.id)}
-				<label class="checkbox-field">
-					<input checked name="hostIds" type="checkbox" value={host.id} />
-					{host.name}
-				</label>
-			{/each}
+		{#each data.eligibleHosts as host (host.id)}
+			<label class="checkbox-field">
+				<input checked name="hostId" type="checkbox" value={host.id} />
+				{host.name}
+			</label>
+		{/each}
 
-			{#if formError}
-				<p class="status" data-state="warning">{formError}</p>
-			{/if}
-		</form>
-	{:else}
-		<p class="status" data-state="warning">Admin access required</p>
-	{/if}
+		{#if formError}
+			<p class="status" data-state="warning">{formError}</p>
+		{/if}
+	</form>
 </section>
 
-{#if user && is_admin}
-	<section class="surface" data-depth="medium">
-		<p class="section-label">Shows</p>
+<section class="surface" data-depth="medium">
+	<p class="section-label">Shows</p>
 
-		{#if shows.error}
-			<h2>{shows.error.message}</h2>
-		{:else if shows?.current?.length}
-			<ul>
-				{#each shows?.current as show (show.id)}
-					<li>
-						<p>
-							<a href={resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`)}
-								>{formatShowDate(show.startsAt)}</a
-							>
-							<span class="badge">{show.status}</span>
-							<span class="badge">{show.id}</span>
-						</p>
-						<form class="inline-actions" onsubmit={handleDeleteShow}>
-							<input name="showId" type="hidden" value={show.id} />
-							<input name="showLabel" type="hidden" value={formatShowDate(show.startsAt)} />
-							<button data-variant="danger" disabled={deletingShowId !== null} type="submit">
-								{deletingShowId === show.id ? 'Deleting' : 'Delete'}
-							</button>
-						</form>
-					</li>
-				{/each}
-			</ul>
-		{:else}
-			<h2>No shows</h2>
-		{/if}
-
-		{#if deleteError}
-			<p class="status" data-state="warning">{deleteError}</p>
-		{/if}
-	</section>
-{/if}
+	{#if data.shows.length}
+		<ul>
+			{#each data.shows as show (show.id)}
+				<li>
+					<p>
+						<a href={resolve(`/admin/shows/${show.id}` as `/admin/shows/${string}`)}>
+							{formatShowDate(show.startsAt)}
+						</a>
+						<span class="badge">{show.status}</span>
+					</p>
+					<form
+						class="inline-actions"
+						method="POST"
+						action="?/delete"
+						use:enhance={({ cancel }) => {
+							if (!window.confirm(`Delete ${formatShowDate(show.startsAt)}?`)) {
+								cancel();
+							}
+						}}
+					>
+						<input name="showId" type="hidden" value={show.id} />
+						<button data-variant="danger" type="submit">Delete</button>
+					</form>
+				</li>
+			{/each}
+		</ul>
+	{:else}
+		<h2>No shows</h2>
+	{/if}
+</section>
 
 <style>
 	li {

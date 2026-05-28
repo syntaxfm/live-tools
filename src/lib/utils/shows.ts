@@ -1,6 +1,4 @@
-import type { Show } from '$lib/schema';
-
-export type ShowStatus = Show['status'];
+import type { ShowStatus } from '$lib/components/shows/registry-types';
 
 export const SHOW_STATUSES: readonly ShowStatus[] = ['draft', 'live', 'ended'];
 
@@ -12,7 +10,7 @@ export function parseShowStatus(value: string): ShowStatus {
 	throw new TypeError('Invalid show status');
 }
 
-export function formatShowDate(timestamp: Show['startsAt'] | null): string {
+export function formatShowDate(timestamp: Date | string | null): string {
 	if (!timestamp) {
 		return 'Unscheduled';
 	}

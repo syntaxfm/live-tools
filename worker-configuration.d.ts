@@ -10,13 +10,13 @@ interface __BaseEnv_Env {
 	GITHUB_CLIENT_ID: string;
 	GITHUB_CLIENT_SECRET: string;
 	ADMIN_GITHUB_USERNAMES: string;
-	SHOW_ROOM: DurableObjectNamespace<import('./src/lib/server/show-room').ShowRoom>;
-	SHOW_DIRECTORY: DurableObjectNamespace<import('./src/lib/server/show-directory').ShowDirectory>;
+	SHOW_ROOM: DurableObjectNamespace<import("./src/lib/server/show-room").ShowRoom>;
+	SHOW_DIRECTORY: DurableObjectNamespace<import("./src/lib/server/show-directory").ShowDirectory>;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {
 		mainModule: unknown;
-		durableNamespaces: 'ShowRoom' | 'ShowDirectory';
+		durableNamespaces: "ShowRoom" | "ShowDirectory";
 	}
 	interface Env extends __BaseEnv_Env {}
 }
@@ -25,17 +25,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<
-		Pick<
-			Cloudflare.Env,
-			| 'ORIGIN'
-			| 'BETTER_AUTH_SECRET'
-			| 'DEV_AUTH'
-			| 'GITHUB_CLIENT_ID'
-			| 'GITHUB_CLIENT_SECRET'
-			| 'ADMIN_GITHUB_USERNAMES'
-		>
-	> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "ORIGIN" | "BETTER_AUTH_SECRET" | "DEV_AUTH" | "GITHUB_CLIENT_ID" | "GITHUB_CLIENT_SECRET" | "ADMIN_GITHUB_USERNAMES">> {}
 }
 
 // Begin runtime types

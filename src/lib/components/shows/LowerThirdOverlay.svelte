@@ -1,22 +1,15 @@
 <script lang="ts">
-	import { type Show, type ShowHost } from '$lib/schema';
+	import type { LowerThirdView } from '$lib/components/shows/room-protocol';
 	import { getLowerThirdAsset, getLowerThirdTitle } from '$lib/utils/lower-thirds';
 	import { fly } from 'svelte/transition';
 
-	interface Props {
-		show: Show & {
-			activeLowerThirdShowHost: ShowHost | null;
-		};
-	}
-
-	let { show }: Props = $props();
-	const host = $derived(show.activeLowerThirdShowHost);
+	let { host }: { host: LowerThirdView | null } = $props();
 	const asset = $derived(getLowerThirdAsset(host));
 	const title = $derived(getLowerThirdTitle(host));
 </script>
 
 <div class="lower-third-stage">
-	{#if host?.id}
+	{#if host}
 		<section
 			transition:fly={{ y: 40, opacity: 0 }}
 			class="lt-root"

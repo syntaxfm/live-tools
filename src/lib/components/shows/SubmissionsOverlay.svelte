@@ -1,25 +1,18 @@
 <script lang="ts">
-	import { type AudienceSubmission, type Show, type SubmissionVote } from '$lib/schema';
+	import type { SubmissionView } from '$lib/components/shows/room-protocol';
 	import { flip } from 'svelte/animate';
-	let {
-		show
-	}: {
-		show: Show & {
-			audienceSubmissionsViaShow: (AudienceSubmission & {
-				submissionVotesViaSubmission: SubmissionVote[];
-			})[];
-		};
-	} = $props();
-	const submissions = $derived(show.audienceSubmissionsViaShow);
+
+	let { submissions }: { submissions: SubmissionView[] } = $props();
 </script>
 
 {#if submissions.length > 0}
 	<section class="submissions-overlay" aria-label="Submissions">
 		<ol class="submissions-overlay__list">
 			{#each submissions as submission (submission.id)}
-				{@const vote_count = submission?.submissionVotesViaSubmission?.length}
 				<li animate:flip class="submissions-overlay__item">
-					<span class="vote" aria-label={`${vote_count} votes`}>{vote_count}</span>
+					<span class="vote" aria-label={`${submission.voteCount} votes`}
+						>{submission.voteCount}</span
+					>
 					<h1>{submission.title || submission.url}</h1>
 				</li>
 			{/each}

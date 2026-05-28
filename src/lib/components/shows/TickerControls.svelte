@@ -1,95 +1,38 @@
 <script lang="ts">
-	import { getDb, getSession } from 'jazz-tools/svelte';
-	import { app, type Show, type TickerMessage } from '$lib/schema';
+	import type { ShowRoomStore } from '$lib/components/shows/room.svelte';
 
-	let {
-		show
-	}: {
-		show: Show & {
-			tickerMessagesViaShow: TickerMessage[];
-		};
-	} = $props();
+	// Reads/writes this show's ticker over the room socket. The page renders this only for
+	// admins (server-gated load); the DO independently enforces admin on every write.
+	let { room }: { room: ShowRoomStore } = $props();
 
-	const db = getDb();
-	const session = getSession();
 	let draftMessage = $state('');
-	let pendingActionId = $state<string | null>(null);
 	let error = $state<string | null>(null);
 
 	function handleDraftMessageInput(event: Event): void {
 		const input = event.currentTarget;
-
 		if (input instanceof HTMLInputElement) {
 			draftMessage = input.value;
 		}
 	}
 
-	async function handleAddMessage(event: SubmitEvent): Promise<void> {
+	function handleAddMessage(event: SubmitEvent): void {
 		event.preventDefault();
 
-		if (!session?.user_id || !show.id) {
-			error = 'Admin profile required';
+		const trimmedText = draftMessage.trim();
+		if (!trimmedText) {
+			error = 'Ticker message required';
 			return;
 		}
 
-		pendingActionId = 'add';
 		error = null;
-
-		try {
-			const trimmedText = draftMessage.trim();
-
-			if (!trimmedText) {
-				throw new TypeError('Ticker message required');
-			}
-
-			db.insert(app.tickerMessages, {
-				showId: show.id,
-				text: trimmedText,
-				createdById: session?.user_id,
-				createdAt: new Date()
-			});
-
-			draftMessage = '';
-		} catch (caughtError) {
-			console.error('Unable to add ticker message', caughtError);
-			error = 'Unable to add ticker message';
-		} finally {
-			pendingActionId = null;
-		}
+		room.send({ type: 'ticker:add', text: trimmedText });
+		draftMessage = '';
 	}
 
-	async function handleDeleteMessage(event: Event): Promise<void> {
+	function handleDeleteMessage(event: Event): void {
 		const button = event.currentTarget;
-
-		if (!(button instanceof HTMLButtonElement)) {
-			error = 'Invalid ticker message control';
-			return;
-		}
-
-		if (!show.id) {
-			error = 'Show required';
-			return;
-		}
-
-		const message = show.tickerMessagesViaShow.find(
-			(candidate) => candidate.id === button.dataset.messageId
-		);
-
-		if (!message) {
-			error = 'Ticker message not found';
-			return;
-		}
-
-		pendingActionId = message.id;
-		error = null;
-
-		try {
-			db.delete(app.tickerMessages, message.id);
-		} catch (caughtError) {
-			console.error('Unable to remove ticker message', caughtError);
-			error = 'Unable to remove ticker message';
-		} finally {
-			pendingActionId = null;
+		if (button instanceof HTMLButtonElement && button.dataset.messageId) {
+			room.send({ type: 'ticker:delete', id: button.dataset.messageId });
 		}
 	}
 </script>
@@ -101,7 +44,6 @@
 		<label class="field">
 			Message
 			<input
-				disabled={pendingActionId === 'add'}
 				maxlength="240"
 				placeholder="New ticker message"
 				value={draftMessage}
@@ -109,25 +51,18 @@
 			/>
 		</label>
 
-		<button
-			data-variant="primary"
-			disabled={pendingActionId === 'add' || !draftMessage.trim()}
-			type="submit"
-		>
-			Add
-		</button>
+		<button data-variant="primary" disabled={!draftMessage.trim()} type="submit">Add</button>
 	</form>
 
-	{#if show.tickerMessagesViaShow.length}
+	{#if room.snapshot && room.snapshot.ticker.length}
 		<ul class="ticker-message-list">
-			{#each show.tickerMessagesViaShow as message, index (message.id)}
+			{#each room.snapshot.ticker as message, index (message.id)}
 				<li>
 					<span class="ticker-message-list__index">{String(index + 1).padStart(2, '0')}</span>
 					<span>{message.text}</span>
 					<button
 						data-message-id={message.id}
 						data-variant="danger"
-						disabled={pendingActionId === message.id}
 						type="button"
 						onclick={handleDeleteMessage}
 					>
@@ -142,5 +77,8 @@
 
 	{#if error}
 		<p class="status" data-state="warning">{error}</p>
+	{/if}
+	{#if room.error}
+		<p class="status" data-state="warning">{room.error}</p>
 	{/if}
 </section>

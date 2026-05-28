@@ -1,24 +1,20 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import ApprovedSubmissionsList from '$lib/components/shows/ApprovedSubmissionsList.svelte';
 	import AudienceSubmissionPanel from '$lib/components/shows/AudienceSubmissionPanel.svelte';
-	import { app } from '$lib/schema';
-	import { QuerySubscription } from 'jazz-tools/svelte';
+	import { LiveShowStore } from '$lib/components/shows/room.svelte';
 
-	const shows = new QuerySubscription(
-		app.shows
-			.where({
-				status: 'live'
-			})
-			.orderBy('startsAt', 'desc')
-			.include({
-				audienceSubmissionsViaShow: app.audienceSubmissions.where({}).include({
-					submissionVotesViaSubmission: app.submissionVotes.where({})
-				})
-			})
-	);
+	// The live viewer surface. Authenticated socket so a signed-in viewer can submit/vote;
+	// follows whichever show is live via the directory DO.
+	const room = new LiveShowStore({ authenticated: true });
+
+	onMount(() => {
+		room.connect();
+		return () => room.close();
+	});
 </script>
 
-{#if shows.current?.[0]}
-	<AudienceSubmissionPanel show={shows.current?.[0]} />
-	<ApprovedSubmissionsList show={shows.current?.[0]} />
+{#if room.snapshot}
+	<AudienceSubmissionPanel {room} />
+	<ApprovedSubmissionsList {room} />
 {/if}

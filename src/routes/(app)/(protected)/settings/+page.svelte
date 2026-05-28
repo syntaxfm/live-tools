@@ -1,14 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getDb, getSession } from 'jazz-tools/svelte';
-
 	import { authClient } from '$lib/auth-client';
+	import { clearSession, getClientSession } from '$lib/session.svelte';
 
-	const db = getDb();
-	const session = getSession();
-	const user = $derived(session?.claims ?? null);
-	const roleLabel = $derived(user?.is_admin === true ? 'admin' : 'viewer');
+	const session = getClientSession();
+	const roleLabel = $derived(session.isAdmin ? 'admin' : 'viewer');
 
 	let signOutError = $state<string | null>(null);
 	let isSigningOut = $state(false);
@@ -19,16 +16,11 @@
 
 		try {
 			const result = await authClient.signOut();
-
 			if (result.error) {
 				signOutError = result.error.message ?? 'Sign out failed';
 				return;
 			}
-
-			await db.logout().catch((error: unknown) => {
-				console.error('Unable to clear Jazz session after sign out', error);
-			});
-
+			clearSession();
 			await goto(resolve('/login'));
 		} catch (error) {
 			console.error('Unable to sign out', error);
@@ -43,9 +35,9 @@
 	<p class="section-label">Settings</p>
 	<h1>Account</h1>
 
-	{#if user}
-		<p>{user.displayName}</p>
-		<p>{session?.claims.githubUsername ?? user.githubUsername}</p>
+	{#if session.claims}
+		<p>{session.claims.name}</p>
+		<p>{session.claims.githubUsername}</p>
 		<p><span class="badge">{roleLabel}</span></p>
 	{/if}
 

@@ -1,35 +1,27 @@
 <script lang="ts">
-	import { getSession, QuerySubscription } from 'jazz-tools/svelte';
-	import { app } from '$lib/schema';
 	import OverlayURLs from '$lib/components/shows/OverlayURLs.svelte';
-	import AdminSubmissionQueue from '$lib/components/shows/AdminSubmissionQueue.svelte';
 	import TickerControls from '$lib/components/shows/TickerControls.svelte';
-	import LowerThirdControls from '$lib/components/shows/LowerThirdControls.svelte';
-	import ShowHostsPanel from '$lib/components/shows/ShowHostsPanel.svelte';
 	import ShowStatePanel from '$lib/components/shows/ShowStatePanel.svelte';
-	import { page } from '$app/state';
+	import ShowHostsPanel from '$lib/components/shows/ShowHostsPanel.svelte';
+	import LowerThirdControls from '$lib/components/shows/LowerThirdControls.svelte';
+	import AdminSubmissionQueue from '$lib/components/shows/AdminSubmissionQueue.svelte';
+	import { ShowRoomStore } from '$lib/components/shows/room.svelte';
 
-	const shows = new QuerySubscription(
-		app.shows
-			.where({
-				id: page.params.id
-			})
-			.orderBy('startsAt', 'desc')
-			.include({
-				tickerMessagesViaShow: app.tickerMessages.where({}),
-				showHostsViaShow: app.showHosts.where({})
-			})
-	);
-	const session = getSession();
-	const is_admin = $derived(session?.claims.is_admin);
-	const show = $derived(shows.current?.[0]);
+	let { data } = $props();
+
+	// The admin console reads/writes this show's room over an authenticated socket. Registry
+	// edits (status, host assignment, host titles) go through this page's form actions.
+	const room = new ShowRoomStore({ authenticated: true });
+
+	$effect(() => {
+		room.connect(data.show.id);
+		return () => room.connect(null);
+	});
 </script>
 
-{#if show && is_admin}
-	<ShowStatePanel {show} />
-	<ShowHostsPanel {show} />
-	<LowerThirdControls {show} />
-	<TickerControls {show} />
-	<AdminSubmissionQueue {show} />
-	<OverlayURLs />
-{/if}
+<ShowStatePanel show={data.show} {room} />
+<ShowHostsPanel hosts={data.hosts} eligibleHosts={data.eligibleHosts} />
+<LowerThirdControls hosts={data.hosts} {room} />
+<TickerControls {room} />
+<AdminSubmissionQueue {room} />
+<OverlayURLs />

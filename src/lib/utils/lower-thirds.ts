@@ -1,12 +1,4 @@
-import type { ShowHost } from '$lib/schema';
-
-export const LOWER_THIRD_DISPLAY_MS = 10000;
-
-// Sentinel id assigned to `shows.activeLowerThirdShowHostId` when the lower-third
-// is intentionally hidden. The runtime broadcast/clear path uses this in place of
-// `null` because setting the optional ref to null does not behave reliably in Jazz
-// for live updates. See docs/adr/0001-lower-third-sentinel-uuid.md.
-export const HIDDEN_LOWER_THIRD_SHOW_HOST_ID = '00000000-0000-4000-8000-000000000001';
+import type { LowerThirdView } from '$lib/components/shows/room-protocol';
 
 interface LowerThirdAsset {
 	key: string;
@@ -39,11 +31,11 @@ const LOWER_THIRD_ASSETS: readonly LowerThirdAsset[] = [
 
 const DEFAULT_LOWER_THIRD_ASSET = LOWER_THIRD_ASSETS[0];
 
-export function getLowerThirdTitle(host: ShowHost | null): string {
+export function getLowerThirdTitle(host: LowerThirdView | null): string {
 	return host?.lowerThirdTitle?.trim() ?? '';
 }
 
-export function getLowerThirdAsset(host: ShowHost | null): LowerThirdAsset {
+export function getLowerThirdAsset(host: LowerThirdView | null): LowerThirdAsset {
 	const normalizedName = host?.displayName.toLowerCase();
 
 	return (

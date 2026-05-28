@@ -1,18 +1,14 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import FeaturedSubmissionOverlay from '$lib/components/shows/FeaturedSubmissionOverlay.svelte';
-	import { app } from '$lib/schema';
+	import { LiveShowStore } from '$lib/components/shows/room.svelte';
 
-	import { QuerySubscription } from 'jazz-tools/svelte';
+	const room = new LiveShowStore();
 
-	const shows = new QuerySubscription(
-		app.shows
-			.where({
-				status: 'live'
-			})
-			.orderBy('startsAt', 'desc')
-	);
+	onMount(() => {
+		room.connect();
+		return () => room.close();
+	});
 </script>
 
-{#if shows.current?.[0]}
-	<FeaturedSubmissionOverlay showId={shows.current[0].id} />
-{/if}
+<FeaturedSubmissionOverlay featured={room.snapshot?.featured ?? null} />

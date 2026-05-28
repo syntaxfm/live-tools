@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { getSession } from 'jazz-tools/svelte';
+	import { getClientSession } from '$lib/session.svelte';
 	let { children } = $props();
 
-	const session = getSession();
+	const session = getClientSession();
 </script>
 
-{#if session?.user_id}
+{#if session.isLoggedIn}
 	{@render children()}
 {/if}

@@ -53,7 +53,7 @@
 		"better-auth": "1.6.11",
 		"better-call": "2.0.3",
 		"drizzle-orm": "^0.45.2",
-		"jazz-tools": "2.0.0-alpha.46"
+		"jose": "^6.2.3"
 	},
 	"packageManager": "pnpm@10.33.2"
 }
