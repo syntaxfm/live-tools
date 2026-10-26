@@ -69,8 +69,7 @@ export type RoomClientMessage =
 	| { type: 'vote:set'; submissionId: string; voted: boolean };
 
 export type RoomServerMessage =
-	| { type: 'snapshot'; snapshot: RoomSnapshot }
-	| { type: 'error'; message: string };
+	{ type: 'snapshot'; snapshot: RoomSnapshot } | { type: 'error'; message: string };
 
 // Directory DO → overlay/homepage: which show is live (so read clients auto-follow it).
 export type DirectoryServerMessage = { type: 'live'; showId: string | null };

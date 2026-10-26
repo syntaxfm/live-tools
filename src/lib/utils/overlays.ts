@@ -1,9 +1,5 @@
 type OverlayFeature =
-	| 'lower-thirds'
-	| 'ticker'
-	| 'featured-submission'
-	| 'submissions'
-	| 'feud-board';
+	'lower-thirds' | 'ticker' | 'featured-submission' | 'submissions' | 'feud-board';
 
 type OverlayFeaturePath = `/overlay/${OverlayFeature}`;
 
