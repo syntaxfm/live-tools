@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { flip } from 'svelte/animate';
 
+	import { asset } from '$app/paths';
 	import type { TickerMessageView } from '$lib/components/shows/room-protocol';
 	import { getTickerLoopMessages } from '$lib/utils/ticker-messages';
 	import { tickerScrollDuration } from './ticker-scroll';
@@ -13,7 +14,11 @@
 	<section class="ticker" aria-live="polite">
 		<div class="ticker__label">
 			<span class="ticker__pulse"></span>
-			<span>Updates</span>
+			<img
+				class="ticker__logo"
+				src={asset('/assets/brand/syntax-wordmark-wide.svg')}
+				alt="Syntax"
+			/>
 		</div>
 
 		<div class="ticker__track">
@@ -37,3 +42,11 @@
 		</div>
 	</section>
 </div>
+
+<style>
+	/* The wordmark ships in brand gold, which disappears on the yellow label. */
+	.ticker__logo {
+		height: 36px;
+		filter: brightness(0);
+	}
+</style>

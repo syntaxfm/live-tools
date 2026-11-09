@@ -33,3 +33,6 @@ vite.config.ts.timestamp-*
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Local-only overlay preview footage
+/static/dev/

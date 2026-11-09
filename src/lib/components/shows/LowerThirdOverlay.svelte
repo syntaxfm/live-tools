@@ -53,7 +53,6 @@
 		left: -30px;
 		width: clamp(180px, 26vw, 230px);
 		pointer-events: none;
-		filter: drop-shadow(3px 4px 0 rgb(5 5 4 / 65%)) drop-shadow(0 1px 0 rgb(247 246 242 / 6%));
 	}
 
 	.lt-avatar > img {

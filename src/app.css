@@ -48,6 +48,16 @@
 		9px 9px 0 0 var(--shadow-color), 10px 10px 0 0 var(--shadow-color);
 	--transition-fast: 80ms ease;
 	--transition-base: 150ms ease;
+
+	/* Syntax paper treatment for the overlay: change these to restyle every ripped edge. */
+	--color-syntax-gold: #fabf46;
+	--rip-image: url('/assets/brand/repeating-paper-top.png');
+	--rip-width: 950px;
+	--rip-height: 25px;
+	--rip-rim: 4px;
+	--rip-offset-x: 6px;
+	--grit-image: url('/assets/brand/grit-mask@2x.png');
+	--grit-size: 150px;
 }
 
 *,
@@ -732,7 +742,6 @@ label,
 	padding: 1.125rem 1.625rem;
 	border-right: var(--border-width) solid var(--color-ink);
 	background: var(--color-accent);
-	box-shadow: 2px 0 0 0 var(--color-ink);
 	color: var(--color-ink);
 	font-family: var(--font-label);
 	font-size: 1.3125rem;
@@ -874,24 +883,15 @@ label,
 	}
 }
 
+/* Overlays are broadcast output, so the operator's OS motion setting must not freeze them. */
 @media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
+	:root:not(:has(.overlay-root)) *,
+	:root:not(:has(.overlay-root)) *::before,
+	:root:not(:has(.overlay-root)) *::after {
 		scroll-behavior: auto !important;
 		transition-duration: 0.01ms !important;
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
-	}
-
-	.lt-root {
-		animation: none;
-	}
-
-	.ticker,
-	.ticker__content,
-	.ticker__pulse {
-		animation: none;
 	}
 }
 

@@ -80,7 +80,7 @@ You MUST use this tool whenever writing Svelte code before sending it to the use
 - Avoid `$effect` except for synchronizing an external resource with reactive state — e.g. the admin console route re-points its room socket when `data.show.id` changes via `$effect`. Never use it for derived state.
 - Event handlers: `onclick={handler}` or `onclick={() => handler(id)}` for capturing an argument. Do not write `onclick={() => { void handler(); }}`.
 - Form/input handlers (`onsubmit`, `onchange`, `oninput`) extract values via the typed `event.currentTarget` (with `instanceof` narrowing where the value comes from the DOM). See `ShowStatePanel.svelte` for the pattern.
-- Type-safe overlay routing: extend `OverlayFeature` in `src/lib/utils/overlays.ts` and add to `OVERLAY_FEATURES`. The `OverlayFeaturePath` template-literal type keeps paths in sync.
+- There is one overlay route, `/overlay` (`OVERLAY_PATH` in `src/lib/utils/overlays.ts`), loaded as a single OBS browser source. Add a new on-air graphic as a slot on `(overlay)/overlay/+page.svelte`, driven by that page's one `LiveShowStore`; do not add per-feature overlay routes.
 - The root `+layout.svelte` awaits `refreshSession()` at the top level to establish client identity from the JWT before rendering. Do not reintroduce SSR — `+layout.ts` exports `ssr = false` for a reason.
 
 ### Styling
@@ -88,7 +88,7 @@ You MUST use this tool whenever writing Svelte code before sending it to the use
 - The visual system is custom CSS in `src/app.css` with CSS custom properties (`--color-accent`, `--color-danger`, `--color-success`, `--radius-md`, `--shadow-raised-md`, `--transition-fast`, etc.) and Space Grotesk / Space Mono fonts.
 - Use **data attributes** for variants, not class proliferation: `data-depth="medium"`, `data-state="warning"`, `data-variant="danger"`, `data-active="true"`. Selectors in component scoped styles target these (`section[data-depth='medium']`, `li[data-active='true']`).
 - Component-scoped `<style>` blocks own their layout. Keep structural CSS (grid, flex, sizing, spacing) in the component; design tokens in `app.css`.
-- Overlays render at 1920×1080 with transparent background via `html:has(.overlay-root)` in `app.css`. Overlay components live in `src/lib/components/shows/*Overlay.svelte` and routes under `(overlay)/overlay/<feature>/`.
+- Overlays render at 1920×1080 with transparent background via `html:has(.overlay-root)` in `app.css`. Overlay components live in `src/lib/components/shows/*Overlay.svelte` and render on the single `(overlay)/overlay/` route.
 - Do not add a `button` class to a `<button>` element. Style buttons via `data-variant` or scoped selectors.
 
 ### Utilities and Feature Colocation
