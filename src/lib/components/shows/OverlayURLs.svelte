@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import { OVERLAY_FEATURES } from '$lib/utils/overlays';
 	import { getAbsoluteUrl } from '$lib/utils/urls';
 </script>
@@ -12,7 +11,7 @@
 			<li>
 				<label>
 					{overlay.label}
-					<input readonly value={getAbsoluteUrl(resolve(overlay.path), page.url.origin)} />
+					<input readonly value={getAbsoluteUrl(resolve(overlay.path), location.origin)} />
 				</label>
 			</li>
 		{/each}
