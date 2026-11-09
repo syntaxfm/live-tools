@@ -1,4 +1,19 @@
+import { execSync } from 'node:child_process';
 import adapter from '@sveltejs/adapter-cloudflare';
+
+// The boot script in each HTML page sets `globalThis.__sveltekit_<hash of version.name>` and
+// the client start chunk reads it. The default name is Date.now(), so every rebuild renames
+// that global; while `wrangler dev` reloads mid-build it can serve new HTML with the old
+// start chunk, which then reads `.data` of an undefined global (LIVE-CONTROL-32). Naming the
+// version after the commit keeps the global stable across rebuilds of the same code.
+function gitCommit() {
+	try {
+		return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+	} catch (error) {
+		console.warn('Unable to read the git commit for the SvelteKit version name', error);
+		return undefined;
+	}
+}
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -13,6 +28,8 @@ const config = {
 		// `config` points the adapter at a wrangler file whose `main` is the adapter's own
 		// output path, kept distinct from the real wrangler.jsonc `main` (src/worker.ts).
 		adapter: adapter({ config: 'wrangler.adapter.jsonc' }),
+
+		version: { name: gitCommit() },
 
 		typescript: {
 			config: (config) => ({
